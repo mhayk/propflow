@@ -1,4 +1,6 @@
 import { DataSourceOptions } from 'typeorm';
+import { CreateWorkOrdersTable1753056000000 } from '../database/migrations/1753056000000-create-work-orders-table';
+import { WorkOrder } from '../work-orders/work-order.entity';
 
 /**
  * Single source of truth for database options, shared by the Nest application
@@ -14,8 +16,9 @@ export function buildDataSourceOptions(
     username: env.WORK_ORDERS_DB_USER ?? 'propflow',
     password: env.WORK_ORDERS_DB_PASSWORD ?? 'propflow',
     database: env.WORK_ORDERS_DB_NAME ?? 'work_orders',
-    entities: [],
-    migrations: [],
+    // Explicit lists (no glob paths): globs break under webpack bundling and jest.
+    entities: [WorkOrder],
+    migrations: [CreateWorkOrdersTable1753056000000],
     // Schema changes only go through reviewed migrations, never auto-sync.
     synchronize: false,
     migrationsRun: true,
