@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { buildDataSourceOptions } from './config/typeorm.config';
+import { WorkOrdersModule } from './work-orders/work-orders.module';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { buildDataSourceOptions } from './config/typeorm.config';
     TypeOrmModule.forRootAsync({
       useFactory: () => buildDataSourceOptions(process.env),
     }),
+    WorkOrdersModule,
   ],
   controllers: [AppController],
 })
