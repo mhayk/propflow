@@ -51,7 +51,9 @@ export class WorkOrderEventsConsumer {
   }
 
   private async notifyCreated(event: WorkOrderEvent): Promise<void> {
-    this.logger.log(`received ${event.type} (${event.eventId})`);
+    this.logger.log(
+      `received ${event.type} (${event.eventId}) correlationId=${event.correlationId ?? 'none'}`,
+    );
     await this.sender.send({
       // Recipient resolution (property manager lookup) arrives with the
       // Properties service; a deterministic placeholder keeps the flow honest.
@@ -62,7 +64,9 @@ export class WorkOrderEventsConsumer {
   }
 
   private async notifyCompleted(event: WorkOrderEvent): Promise<void> {
-    this.logger.log(`received ${event.type} (${event.eventId})`);
+    this.logger.log(
+      `received ${event.type} (${event.eventId}) correlationId=${event.correlationId ?? 'none'}`,
+    );
     await this.sender.send({
       recipient: `tenant-of-${event.data.propertyId}`,
       subject: `Work order completed: ${event.data.title}`,

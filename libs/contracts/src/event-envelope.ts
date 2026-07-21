@@ -7,5 +7,8 @@ export interface EventEnvelope<TType extends string, TData> {
   eventId: string;
   type: TType;
   occurredAt: string;
+  /** Request id of the HTTP call that caused this event, when there was one —
+   * lets one user action be traced across services AND the async boundary. */
+  correlationId: string | null;
   data: TData;
 }

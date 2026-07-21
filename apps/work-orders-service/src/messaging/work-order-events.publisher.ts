@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 import { Injectable, Logger } from '@nestjs/common';
 import { EXCHANGES, WorkOrderEvent, WorkOrderEventType } from '@app/contracts';
+import { currentRequestId } from '@app/observability';
 import { WorkOrder } from '../work-orders/work-order.entity';
 
 @Injectable()
@@ -21,6 +22,7 @@ export class WorkOrderEventsPublisher {
       eventId: randomUUID(),
       type,
       occurredAt: new Date().toISOString(),
+      correlationId: currentRequestId() ?? null,
       data: {
         workOrderId: workOrder.id,
         propertyId: workOrder.propertyId,

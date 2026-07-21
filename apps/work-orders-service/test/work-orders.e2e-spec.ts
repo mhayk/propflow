@@ -47,6 +47,21 @@ describe('WorkOrders (e2e)', () => {
     await app.close();
   });
 
+  describe('correlation', () => {
+    it('echoes a provided x-request-id and mints one when absent', async () => {
+      const provided = await request(app.getHttpServer())
+        .get('/work-orders')
+        .set('x-request-id', 'client-supplied-id')
+        .expect(200);
+      expect(provided.headers['x-request-id']).toBe('client-supplied-id');
+
+      const minted = await request(app.getHttpServer())
+        .get('/work-orders')
+        .expect(200);
+      expect(minted.headers['x-request-id']).toMatch(/^[0-9a-f-]{36}$/);
+    });
+  });
+
   describe('POST /work-orders', () => {
     it('creates a work order with defaults applied by the database', async () => {
       const created = await createWorkOrder();

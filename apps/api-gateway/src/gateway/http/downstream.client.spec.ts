@@ -3,6 +3,7 @@ import {
   GatewayTimeoutException,
   HttpException,
 } from '@nestjs/common';
+import { runWithRequestContext } from '@app/observability';
 import { DownstreamClient } from './downstream.client';
 
 class TestClient extends DownstreamClient {
@@ -73,6 +74,23 @@ describe('DownstreamClient', () => {
 
     await expect(client.fetchThing()).rejects.toBeInstanceOf(
       BadGatewayException,
+    );
+  });
+
+  it('forwards the ambient request id to the downstream service', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { ok: true }));
+
+    await runWithRequestContext({ requestId: 'req-777' }, () =>
+      client.fetchThing(),
+    );
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          'x-request-id': 'req-777',
+        }) as Record<string, string>,
+      }),
     );
   });
 });

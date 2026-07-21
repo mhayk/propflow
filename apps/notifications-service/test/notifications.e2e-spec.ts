@@ -41,6 +41,7 @@ describe('Notifications event flow (e2e)', () => {
       eventId: randomUUID(),
       type,
       occurredAt: new Date().toISOString(),
+      correlationId: null,
       data: {
         workOrderId: randomUUID(),
         propertyId: randomUUID(),

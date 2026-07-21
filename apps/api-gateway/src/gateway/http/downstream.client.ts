@@ -3,6 +3,7 @@ import {
   GatewayTimeoutException,
   HttpException,
 } from '@nestjs/common';
+import { currentRequestId, REQUEST_ID_HEADER } from '@app/observability';
 
 export const REQUEST_TIMEOUT_MS = 3_000;
 
@@ -40,11 +41,17 @@ export class DownstreamClient {
   }
 
   private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
+    const requestId = currentRequestId();
     let response: Response;
     try {
       response = await fetch(`${this.baseUrl}${path}`, {
         ...init,
-        headers: { 'content-type': 'application/json' },
+        headers: {
+          'content-type': 'application/json',
+          // Propagate the caller's correlation id so one user action is
+          // traceable across every service it touches.
+          ...(requestId ? { [REQUEST_ID_HEADER]: requestId } : {}),
+        },
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
     } catch (error) {
