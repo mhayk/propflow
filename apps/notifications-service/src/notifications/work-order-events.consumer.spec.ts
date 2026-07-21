@@ -1,11 +1,27 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import type { ConsumeMessage } from 'amqplib';
 import { WORK_ORDER_EVENTS, WorkOrderEvent } from '@app/contracts';
+import { EventRetryHandler } from './event-retry.handler';
 import { NotificationSender } from './notification-sender';
 import { WorkOrderEventsConsumer } from './work-order-events.consumer';
 
 describe('WorkOrderEventsConsumer', () => {
   let consumer: WorkOrderEventsConsumer;
   let sender: { send: jest.Mock };
+
+  const message = {
+    properties: { headers: {} },
+  } as unknown as ConsumeMessage;
+
+  // Pass-through: retry behaviour itself is covered in event-retry.handler.spec
+  const retryStub = {
+    handle: (
+      _queue: string,
+      _event: object,
+      _message: ConsumeMessage,
+      handler: () => Promise<void>,
+    ) => handler(),
+  };
 
   const event = (type: WorkOrderEvent['type']): WorkOrderEvent => ({
     eventId: '44444444-4444-4444-8444-444444444444',
@@ -28,6 +44,7 @@ describe('WorkOrderEventsConsumer', () => {
       providers: [
         WorkOrderEventsConsumer,
         { provide: NotificationSender, useValue: sender },
+        { provide: EventRetryHandler, useValue: retryStub },
       ],
     }).compile();
 
@@ -35,7 +52,10 @@ describe('WorkOrderEventsConsumer', () => {
   });
 
   it('notifies the property manager when a work order is created', async () => {
-    await consumer.onWorkOrderCreated(event(WORK_ORDER_EVENTS.CREATED));
+    await consumer.onWorkOrderCreated(
+      event(WORK_ORDER_EVENTS.CREATED),
+      message,
+    );
 
     expect(sender.send).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -46,7 +66,10 @@ describe('WorkOrderEventsConsumer', () => {
   });
 
   it('notifies the tenant when a work order is completed', async () => {
-    await consumer.onWorkOrderCompleted(event(WORK_ORDER_EVENTS.COMPLETED));
+    await consumer.onWorkOrderCompleted(
+      event(WORK_ORDER_EVENTS.COMPLETED),
+      message,
+    );
 
     expect(sender.send).toHaveBeenCalledWith(
       expect.objectContaining({

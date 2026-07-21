@@ -1,7 +1,9 @@
 import { RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
 import { Injectable, Logger } from '@nestjs/common';
+import type { ConsumeMessage } from 'amqplib';
 import { EXCHANGES, WORK_ORDER_EVENTS } from '@app/contracts';
 import type { WorkOrderEvent } from '@app/contracts';
+import { EventRetryHandler } from './event-retry.handler';
 import { NotificationSender } from './notification-sender';
 
 export const QUEUES = {
@@ -13,7 +15,10 @@ export const QUEUES = {
 export class WorkOrderEventsConsumer {
   private readonly logger = new Logger(WorkOrderEventsConsumer.name);
 
-  constructor(private readonly sender: NotificationSender) {}
+  constructor(
+    private readonly sender: NotificationSender,
+    private readonly retry: EventRetryHandler,
+  ) {}
 
   @RabbitSubscribe({
     exchange: EXCHANGES.EVENTS,
@@ -21,7 +26,31 @@ export class WorkOrderEventsConsumer {
     queue: QUEUES.WORK_ORDER_CREATED,
     queueOptions: { durable: true },
   })
-  async onWorkOrderCreated(event: WorkOrderEvent): Promise<void> {
+  async onWorkOrderCreated(
+    event: WorkOrderEvent,
+    message: ConsumeMessage,
+  ): Promise<void> {
+    await this.retry.handle(QUEUES.WORK_ORDER_CREATED, event, message, () =>
+      this.notifyCreated(event),
+    );
+  }
+
+  @RabbitSubscribe({
+    exchange: EXCHANGES.EVENTS,
+    routingKey: WORK_ORDER_EVENTS.COMPLETED,
+    queue: QUEUES.WORK_ORDER_COMPLETED,
+    queueOptions: { durable: true },
+  })
+  async onWorkOrderCompleted(
+    event: WorkOrderEvent,
+    message: ConsumeMessage,
+  ): Promise<void> {
+    await this.retry.handle(QUEUES.WORK_ORDER_COMPLETED, event, message, () =>
+      this.notifyCompleted(event),
+    );
+  }
+
+  private async notifyCreated(event: WorkOrderEvent): Promise<void> {
     this.logger.log(`received ${event.type} (${event.eventId})`);
     await this.sender.send({
       // Recipient resolution (property manager lookup) arrives with the
@@ -32,13 +61,7 @@ export class WorkOrderEventsConsumer {
     });
   }
 
-  @RabbitSubscribe({
-    exchange: EXCHANGES.EVENTS,
-    routingKey: WORK_ORDER_EVENTS.COMPLETED,
-    queue: QUEUES.WORK_ORDER_COMPLETED,
-    queueOptions: { durable: true },
-  })
-  async onWorkOrderCompleted(event: WorkOrderEvent): Promise<void> {
+  private async notifyCompleted(event: WorkOrderEvent): Promise<void> {
     this.logger.log(`received ${event.type} (${event.eventId})`);
     await this.sender.send({
       recipient: `tenant-of-${event.data.propertyId}`,
