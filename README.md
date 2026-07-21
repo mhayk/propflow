@@ -60,7 +60,7 @@ RabbitMQ management UI: http://localhost:15672 (propflow / propflow).
 Each phase is a self-contained increment with tests and documentation.
 
 - [x] **Phase 0 — Foundations**: monorepo scaffold, Docker Compose (PostgreSQL + RabbitMQ), CI, ADR structure
-- [ ] **Phase 1 — Work Orders service**: REST API, PostgreSQL + data modelling, validation, unit + e2e tests
+- [x] **Phase 1 — Work Orders service**: REST API, PostgreSQL + data modelling, validation, unit + e2e tests
 - [ ] **Phase 2 — Event-driven core**: domain events over RabbitMQ, Notifications consumer, retries + dead-letter queue
 - [ ] **Phase 3 — Properties service + API Gateway**: service composition, inter-service communication patterns
 - [ ] **Phase 4 — Observability**: structured logging, health checks, metrics, distributed tracing
