@@ -54,6 +54,25 @@ describe('Notifications event flow (e2e)', () => {
     return amqp.publish(EXCHANGES.EVENTS, type, event, { persistent: true });
   };
 
+  // Publishing before the subscriber has bound its queue would drop the
+  // message at the exchange (topic exchanges discard unroutable messages),
+  // so wait until the queue exists AND has a consumer.
+  const waitForConsumer = async (queue: string): Promise<void> => {
+    const deadline = Date.now() + 15_000;
+    for (;;) {
+      try {
+        const { consumerCount } = await amqp.channel.checkQueue(queue);
+        if (consumerCount > 0) return;
+      } catch {
+        // queue not asserted yet
+      }
+      if (Date.now() > deadline) {
+        throw new Error(`no consumer appeared on ${queue}`);
+      }
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  };
+
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -65,7 +84,9 @@ describe('Notifications event flow (e2e)', () => {
     app = moduleFixture.createNestApplication();
     await app.init();
     amqp = app.get(AmqpConnection);
-  });
+    await waitForConsumer('notifications.work-order-created');
+    await waitForConsumer('notifications.work-order-completed');
+  }, 30_000);
 
   afterAll(async () => {
     await app.close();
