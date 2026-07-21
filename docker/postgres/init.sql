@@ -3,3 +3,5 @@ CREATE DATABASE work_orders;
 CREATE DATABASE work_orders_test;
 CREATE DATABASE properties;
 CREATE DATABASE properties_test;
+CREATE DATABASE audit;
+CREATE DATABASE audit_test;

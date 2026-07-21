@@ -9,3 +9,11 @@ export const EXCHANGES = {
   /** Messages that exhausted their retries end up here. */
   DEAD_LETTER: 'propflow.dlx',
 } as const;
+
+/**
+ * Kafka topics. Work order events are keyed by workOrderId so every event of
+ * one aggregate lands on the same partition, preserving its order.
+ */
+export const TOPICS = {
+  WORK_ORDER_EVENTS: 'propflow.work-orders',
+} as const;
