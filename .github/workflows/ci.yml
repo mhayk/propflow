@@ -44,6 +44,18 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 5
+      rabbitmq:
+        image: rabbitmq:3.13-alpine
+        env:
+          RABBITMQ_DEFAULT_USER: propflow
+          RABBITMQ_DEFAULT_PASS: propflow
+        ports:
+          - 5672:5672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
 
