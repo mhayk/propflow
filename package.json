@@ -17,10 +17,12 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./apps/api-gateway/test/jest-e2e.json && jest --config ./apps/work-orders-service/test/jest-e2e.json && jest --config ./apps/notifications-service/test/jest-e2e.json",
-    "typeorm": "typeorm-ts-node-commonjs -d apps/work-orders-service/src/database/data-source.ts",
-    "migration:run": "npm run typeorm -- migration:run",
-    "migration:revert": "npm run typeorm -- migration:revert"
+    "test:e2e": "jest --config ./apps/api-gateway/test/jest-e2e.json && jest --config ./apps/work-orders-service/test/jest-e2e.json && jest --config ./apps/notifications-service/test/jest-e2e.json && jest --config ./apps/properties-service/test/jest-e2e.json",
+    "typeorm:work-orders": "typeorm-ts-node-commonjs -d apps/work-orders-service/src/database/data-source.ts",
+    "typeorm:properties": "typeorm-ts-node-commonjs -d apps/properties-service/src/database/data-source.ts",
+    "migration:run": "npm run typeorm:work-orders -- migration:run && npm run typeorm:properties -- migration:run",
+    "migration:revert:work-orders": "npm run typeorm:work-orders -- migration:revert",
+    "migration:revert:properties": "npm run typeorm:properties -- migration:revert"
   },
   "dependencies": {
     "@golevelup/nestjs-rabbitmq": "^9.0.2",

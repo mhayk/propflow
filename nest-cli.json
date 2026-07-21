@@ -37,6 +37,15 @@
         "tsConfigPath": "apps/notifications-service/tsconfig.app.json"
       }
     },
+    "properties-service": {
+      "type": "application",
+      "root": "apps/properties-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/properties-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/properties-service/tsconfig.app.json"
+      }
+    },
     "work-orders-service": {
       "type": "application",
       "root": "apps/work-orders-service",
