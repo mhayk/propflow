@@ -47,6 +47,19 @@ describe('WorkOrders (e2e)', () => {
     await app.close();
   });
 
+  describe('health', () => {
+    it('reports ready when the database responds', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/health/ready')
+        .expect(200);
+
+      expect(response.body).toMatchObject({
+        status: 'ok',
+        info: { database: { status: 'up' } },
+      });
+    });
+  });
+
   describe('observability', () => {
     it('exposes Prometheus metrics with the service label and route template', async () => {
       await request(app.getHttpServer()).get('/work-orders').expect(200);

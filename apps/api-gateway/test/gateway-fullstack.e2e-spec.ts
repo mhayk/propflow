@@ -115,6 +115,20 @@ describe('Gateway full-stack (e2e)', () => {
       .expect(409);
   });
 
+  it('reports ready while both downstreams respond', async () => {
+    const response = await request(gateway.getHttpServer())
+      .get('/api/health/ready')
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      status: 'ok',
+      info: {
+        'work-orders': { status: 'up' },
+        properties: { status: 'up' },
+      },
+    });
+  });
+
   it('composes the property summary from both services', async () => {
     const response = await request(gateway.getHttpServer())
       .get(`/api/properties/${propertyId}/summary`)

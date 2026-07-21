@@ -26,4 +26,15 @@ describe('App (e2e)', () => {
       .expect(200)
       .expect({ status: 'ok' });
   });
+
+  it('/health/ready (GET) reports the broker connection', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/health/ready')
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      status: 'ok',
+      info: { rabbitmq: { status: 'up' } },
+    });
+  });
 });

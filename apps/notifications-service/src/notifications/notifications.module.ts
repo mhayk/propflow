@@ -32,5 +32,7 @@ import { QUEUES, WorkOrderEventsConsumer } from './work-order-events.consumer';
     WorkOrderEventsConsumer,
     { provide: NotificationSender, useClass: LoggingNotificationSender },
   ],
+  // Re-export so HealthModule can inject AmqpConnection for its probe.
+  exports: [RabbitMQModule],
 })
 export class NotificationsModule {}

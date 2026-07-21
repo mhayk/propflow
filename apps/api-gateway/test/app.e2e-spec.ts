@@ -28,4 +28,12 @@ describe('App (e2e)', () => {
       .expect(200)
       .expect({ status: 'ok' });
   });
+
+  it('/api/health/ready (GET) is 503 while downstreams are unreachable', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/health/ready')
+      .expect(503);
+
+    expect(response.body).toMatchObject({ status: 'error' });
+  });
 });

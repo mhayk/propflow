@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 import { buildLoggerOptions, MetricsModule } from '@app/observability';
-import { AppController } from './app.controller';
+import { HealthModule } from './health/health.module';
 import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
@@ -10,8 +10,8 @@ import { NotificationsModule } from './notifications/notifications.module';
     ConfigModule.forRoot({ isGlobal: true }),
     LoggerModule.forRoot(buildLoggerOptions('notifications-service')),
     MetricsModule.forRoot('notifications-service'),
+    HealthModule,
     NotificationsModule,
   ],
-  controllers: [AppController],
 })
 export class AppModule {}
