@@ -61,7 +61,7 @@ Each phase is a self-contained increment with tests and documentation.
 
 - [x] **Phase 0 — Foundations**: monorepo scaffold, Docker Compose (PostgreSQL + RabbitMQ), CI, ADR structure
 - [x] **Phase 1 — Work Orders service**: REST API, PostgreSQL + data modelling, validation, unit + e2e tests
-- [ ] **Phase 2 — Event-driven core**: domain events over RabbitMQ, Notifications consumer, retries + dead-letter queue
+- [x] **Phase 2 — Event-driven core**: domain events over RabbitMQ, Notifications consumer, retries + dead-letter queue
 - [ ] **Phase 3 — Properties service + API Gateway**: service composition, inter-service communication patterns
 - [ ] **Phase 4 — Observability**: structured logging, health checks, metrics, distributed tracing
 - [ ] **Phase 5 — Kafka**: event streaming for an audit/activity feed; RabbitMQ vs Kafka in practice
