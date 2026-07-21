@@ -23,7 +23,7 @@ jobs:
         run: npm run lint -- --no-fix
 
       - name: Build all apps
-        run: npm run build api-gateway && npm run build work-orders-service && npm run build notifications-service
+        run: npm run build api-gateway && npm run build work-orders-service && npm run build notifications-service && npm run build properties-service
 
       - name: Unit tests
         run: npm test
