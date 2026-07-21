@@ -4,12 +4,16 @@ import { Injectable, Logger } from '@nestjs/common';
 import { EXCHANGES, WorkOrderEvent, WorkOrderEventType } from '@app/contracts';
 import { currentRequestId } from '@app/observability';
 import { WorkOrder } from '../work-orders/work-order.entity';
+import { WorkOrderAuditProducer } from './work-order-audit.producer';
 
 @Injectable()
 export class WorkOrderEventsPublisher {
   private readonly logger = new Logger(WorkOrderEventsPublisher.name);
 
-  constructor(private readonly amqp: AmqpConnection) {}
+  constructor(
+    private readonly amqp: AmqpConnection,
+    private readonly audit: WorkOrderAuditProducer,
+  ) {}
 
   /**
    * Best-effort publish after the transaction committed. A broker outage must
@@ -44,5 +48,9 @@ export class WorkOrderEventsPublisher {
         error instanceof Error ? error.stack : String(error),
       );
     }
+
+    // Same envelope, second destination: RabbitMQ fans out transient
+    // reactions, Kafka keeps the replayable history (ADR-0002).
+    await this.audit.record(event);
   }
 }

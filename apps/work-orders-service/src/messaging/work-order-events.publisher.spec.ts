@@ -7,11 +7,13 @@ import {
   WorkOrderPriority,
   WorkOrderStatus,
 } from '../work-orders/work-order.enums';
+import { WorkOrderAuditProducer } from './work-order-audit.producer';
 import { WorkOrderEventsPublisher } from './work-order-events.publisher';
 
 describe('WorkOrderEventsPublisher', () => {
   let publisher: WorkOrderEventsPublisher;
   let amqp: { publish: jest.Mock };
+  let audit: { record: jest.Mock };
 
   const workOrder = {
     id: '55555555-5555-4555-8555-555555555555',
@@ -27,11 +29,13 @@ describe('WorkOrderEventsPublisher', () => {
 
   beforeEach(async () => {
     amqp = { publish: jest.fn().mockResolvedValue(undefined) };
+    audit = { record: jest.fn().mockResolvedValue(undefined) };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         WorkOrderEventsPublisher,
         { provide: AmqpConnection, useValue: amqp },
+        { provide: WorkOrderAuditProducer, useValue: audit },
       ],
     }).compile();
 
@@ -82,5 +86,24 @@ describe('WorkOrderEventsPublisher', () => {
     await expect(
       publisher.publish(WORK_ORDER_EVENTS.CREATED, workOrder),
     ).resolves.toBeUndefined();
+  });
+
+  it('appends the same envelope to the Kafka audit stream', async () => {
+    await publisher.publish(WORK_ORDER_EVENTS.CREATED, workOrder);
+
+    const [, , published] = amqp.publish.mock.calls[0] as [
+      string,
+      string,
+      WorkOrderEvent,
+    ];
+    expect(audit.record).toHaveBeenCalledWith(published);
+  });
+
+  it('still records the audit entry when RabbitMQ is down', async () => {
+    amqp.publish.mockRejectedValue(new Error('broker down'));
+
+    await publisher.publish(WORK_ORDER_EVENTS.CREATED, workOrder);
+
+    expect(audit.record).toHaveBeenCalled();
   });
 });

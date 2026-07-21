@@ -12,3 +12,5 @@ process.env.PROPERTIES_DB_USER ??= 'propflow';
 process.env.PROPERTIES_DB_PASSWORD ??= 'propflow';
 process.env.PROPERTIES_DB_NAME ??= 'properties_test';
 process.env.RABBITMQ_URL ??= 'amqp://propflow:propflow@localhost:5672';
+process.env.KAFKA_BROKERS ??= 'localhost:9092';
+process.env.KAFKAJS_NO_PARTITIONER_WARNING = '1';
