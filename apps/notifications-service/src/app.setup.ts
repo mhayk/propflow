@@ -1,4 +1,4 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { Logger } from 'nestjs-pino';
 import { requestContextMiddleware } from '@app/observability';
 
@@ -6,11 +6,4 @@ import { requestContextMiddleware } from '@app/observability';
 export function configureApp(app: INestApplication): void {
   app.use(requestContextMiddleware);
   app.useLogger(app.get(Logger));
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
-  );
 }

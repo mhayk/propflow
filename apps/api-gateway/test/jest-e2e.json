@@ -9,6 +9,6 @@
     "^.+\\.(t|j)s$": "ts-jest"
   },
   "moduleNameMapper": {
-    "^@app/contracts(|/.*)$": "<rootDir>/../../../libs/contracts/src/$1"
+    "^@app/(contracts|observability)(|/.*)$": "<rootDir>/../../../libs/$1/src/$2"
   }
 }
