@@ -1,8 +1,10 @@
 import { NestFactory } from '@nestjs/core';
-import { WorkOrdersServiceModule } from './work-orders-service.module';
+import { AppModule } from './app.module';
+import { configureApp } from './app.setup';
 
 async function bootstrap() {
-  const app = await NestFactory.create(WorkOrdersServiceModule);
-  await app.listen(process.env.PORT ?? 3001);
+  const app = await NestFactory.create(AppModule);
+  configureApp(app);
+  await app.listen(process.env.WORK_ORDERS_PORT ?? 3001);
 }
 void bootstrap();
