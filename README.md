@@ -66,7 +66,7 @@ Each phase is a self-contained increment with tests and documentation.
 - [x] **Phase 1 — Work Orders service**: REST API, PostgreSQL + data modelling, validation, unit + e2e tests
 - [x] **Phase 2 — Event-driven core**: domain events over RabbitMQ, Notifications consumer, retries + dead-letter queue
 - [x] **Phase 3 — Properties service + API Gateway**: service composition, inter-service communication patterns
-- [ ] **Phase 4 — Observability**: structured logging, health checks, metrics, distributed tracing
+- [x] **Phase 4 — Observability**: structured logging, correlation ids, Prometheus metrics, liveness/readiness probes
 - [ ] **Phase 5 — Kafka**: event streaming for an audit/activity feed; RabbitMQ vs Kafka in practice
 - [ ] **Phase 6 — AI integration**: LLM-powered triage of maintenance requests (urgency + category classification)
 - [ ] **Phase 7 — Production hardening**: outbox pattern, idempotent consumers, Kubernetes manifests

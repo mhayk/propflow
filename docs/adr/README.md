@@ -8,3 +8,4 @@ Every significant technical decision in this project is recorded here using the 
 - [ADR-0002](0002-rabbitmq-first-kafka-later.md) — RabbitMQ first, Kafka later
 - [ADR-0003](0003-typeorm-over-prisma.md) — TypeORM over Prisma
 - [ADR-0004](0004-golevelup-rabbitmq-over-nest-transport.md) — @golevelup/nestjs-rabbitmq over Nest's built-in RMQ transport
+- [ADR-0005](0005-observability-stack.md) — Observability stack: pino, ALS request context, prom-client
