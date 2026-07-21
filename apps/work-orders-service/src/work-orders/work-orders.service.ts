@@ -5,6 +5,8 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, Repository } from 'typeorm';
+import { WORK_ORDER_EVENTS, WorkOrderEventType } from '@app/contracts';
+import { WorkOrderEventsPublisher } from '../messaging/work-order-events.publisher';
 import { CreateWorkOrderDto } from './dto/create-work-order.dto';
 import { PaginatedResult } from './dto/paginated-result';
 import { QueryWorkOrdersDto } from './dto/query-work-orders.dto';
@@ -12,16 +14,25 @@ import { WorkOrder } from './work-order.entity';
 import { WorkOrderStatus } from './work-order.enums';
 import { canAssign, canTransition } from './work-order-transitions';
 
+/** Which domain event each externally-triggered status change produces. */
+const STATUS_EVENTS: Partial<Record<WorkOrderStatus, WorkOrderEventType>> = {
+  [WorkOrderStatus.IN_PROGRESS]: WORK_ORDER_EVENTS.STARTED,
+  [WorkOrderStatus.COMPLETED]: WORK_ORDER_EVENTS.COMPLETED,
+  [WorkOrderStatus.CANCELLED]: WORK_ORDER_EVENTS.CANCELLED,
+};
+
 @Injectable()
 export class WorkOrdersService {
   constructor(
     @InjectRepository(WorkOrder)
     private readonly repository: Repository<WorkOrder>,
+    private readonly events: WorkOrderEventsPublisher,
   ) {}
 
-  create(dto: CreateWorkOrderDto): Promise<WorkOrder> {
-    const workOrder = this.repository.create(dto);
-    return this.repository.save(workOrder);
+  async create(dto: CreateWorkOrderDto): Promise<WorkOrder> {
+    const workOrder = await this.repository.save(this.repository.create(dto));
+    await this.events.publish(WORK_ORDER_EVENTS.CREATED, workOrder);
+    return workOrder;
   }
 
   async findAll(
@@ -63,7 +74,9 @@ export class WorkOrdersService {
 
     workOrder.assigneeId = assigneeId;
     workOrder.status = WorkOrderStatus.ASSIGNED;
-    return this.repository.save(workOrder);
+    const saved = await this.repository.save(workOrder);
+    await this.events.publish(WORK_ORDER_EVENTS.ASSIGNED, saved);
+    return saved;
   }
 
   async updateStatus(id: string, next: WorkOrderStatus): Promise<WorkOrder> {
@@ -81,6 +94,12 @@ export class WorkOrdersService {
     }
 
     workOrder.status = next;
-    return this.repository.save(workOrder);
+    const saved = await this.repository.save(workOrder);
+
+    const eventType = STATUS_EVENTS[next];
+    if (eventType) {
+      await this.events.publish(eventType, saved);
+    }
+    return saved;
   }
 }

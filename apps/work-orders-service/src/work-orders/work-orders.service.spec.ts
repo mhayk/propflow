@@ -2,6 +2,8 @@ import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { WORK_ORDER_EVENTS } from '@app/contracts';
+import { WorkOrderEventsPublisher } from '../messaging/work-order-events.publisher';
 import { CreateWorkOrderDto } from './dto/create-work-order.dto';
 import { QueryWorkOrdersDto } from './dto/query-work-orders.dto';
 import { WorkOrder } from './work-order.entity';
@@ -30,6 +32,8 @@ describe('WorkOrdersService', () => {
     ...overrides,
   });
 
+  let publisher: { publish: jest.Mock };
+
   beforeEach(async () => {
     repository = {
       create: jest.fn(),
@@ -37,11 +41,13 @@ describe('WorkOrdersService', () => {
       findOneBy: jest.fn(),
       findAndCount: jest.fn(),
     };
+    publisher = { publish: jest.fn().mockResolvedValue(undefined) };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         WorkOrdersService,
         { provide: getRepositoryToken(WorkOrder), useValue: repository },
+        { provide: WorkOrderEventsPublisher, useValue: publisher },
       ],
     }).compile();
 
@@ -64,6 +70,10 @@ describe('WorkOrdersService', () => {
       expect(repository.create).toHaveBeenCalledWith(dto);
       expect(repository.save).toHaveBeenCalledWith(entity);
       expect(result).toBe(entity);
+      expect(publisher.publish).toHaveBeenCalledWith(
+        WORK_ORDER_EVENTS.CREATED,
+        entity,
+      );
     });
   });
 
@@ -131,6 +141,10 @@ describe('WorkOrdersService', () => {
 
       expect(result.status).toBe(WorkOrderStatus.ASSIGNED);
       expect(result.assigneeId).toBe(assigneeId);
+      expect(publisher.publish).toHaveBeenCalledWith(
+        WORK_ORDER_EVENTS.ASSIGNED,
+        result,
+      );
     });
 
     it('allows reassignment while still assigned', async () => {
@@ -190,6 +204,31 @@ describe('WorkOrdersService', () => {
         ConflictException,
       );
       expect(repository.save).not.toHaveBeenCalled();
+      expect(publisher.publish).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      [WorkOrderStatus.IN_PROGRESS, WORK_ORDER_EVENTS.STARTED],
+      [WorkOrderStatus.COMPLETED, WORK_ORDER_EVENTS.COMPLETED],
+      [WorkOrderStatus.CANCELLED, WORK_ORDER_EVENTS.CANCELLED],
+    ])('publishes the matching event for %s', async (to, eventType) => {
+      const from =
+        to === WorkOrderStatus.CANCELLED
+          ? WorkOrderStatus.OPEN
+          : to === WorkOrderStatus.IN_PROGRESS
+            ? WorkOrderStatus.ASSIGNED
+            : WorkOrderStatus.IN_PROGRESS;
+      repository.findOneBy.mockResolvedValue(workOrder({ status: from }));
+      repository.save.mockImplementation((wo) =>
+        Promise.resolve(wo as WorkOrder),
+      );
+
+      await service.updateStatus('any-id', to);
+
+      expect(publisher.publish).toHaveBeenCalledWith(
+        eventType,
+        expect.objectContaining({ status: to }),
+      );
     });
 
     it('rejects moving to assigned outside the assign endpoint', async () => {
