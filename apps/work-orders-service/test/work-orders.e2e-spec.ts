@@ -47,6 +47,20 @@ describe('WorkOrders (e2e)', () => {
     await app.close();
   });
 
+  describe('observability', () => {
+    it('exposes Prometheus metrics with the service label and route template', async () => {
+      await request(app.getHttpServer()).get('/work-orders').expect(200);
+
+      const response = await request(app.getHttpServer())
+        .get('/metrics')
+        .expect(200);
+
+      expect(response.text).toContain('http_request_duration_seconds');
+      expect(response.text).toContain('service="work-orders-service"');
+      expect(response.text).toContain('route="/work-orders"');
+    });
+  });
+
   describe('correlation', () => {
     it('echoes a provided x-request-id and mints one when absent', async () => {
       const provided = await request(app.getHttpServer())
