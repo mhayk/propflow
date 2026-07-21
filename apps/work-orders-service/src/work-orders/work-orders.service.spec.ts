@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -114,6 +114,92 @@ describe('WorkOrdersService', () => {
       await expect(service.findOne('missing-id')).rejects.toBeInstanceOf(
         NotFoundException,
       );
+    });
+  });
+
+  describe('assign', () => {
+    const assigneeId = '5b4f2a54-0000-4000-8000-000000000009';
+
+    it('assigns an open work order and moves it to assigned', async () => {
+      const entity = workOrder({ status: WorkOrderStatus.OPEN });
+      repository.findOneBy.mockResolvedValue(entity);
+      repository.save.mockImplementation((wo) =>
+        Promise.resolve(wo as WorkOrder),
+      );
+
+      const result = await service.assign(entity.id, assigneeId);
+
+      expect(result.status).toBe(WorkOrderStatus.ASSIGNED);
+      expect(result.assigneeId).toBe(assigneeId);
+    });
+
+    it('allows reassignment while still assigned', async () => {
+      const entity = workOrder({
+        status: WorkOrderStatus.ASSIGNED,
+        assigneeId: 'previous-assignee',
+      });
+      repository.findOneBy.mockResolvedValue(entity);
+      repository.save.mockImplementation((wo) =>
+        Promise.resolve(wo as WorkOrder),
+      );
+
+      const result = await service.assign(entity.id, assigneeId);
+
+      expect(result.assigneeId).toBe(assigneeId);
+    });
+
+    it.each([
+      WorkOrderStatus.IN_PROGRESS,
+      WorkOrderStatus.COMPLETED,
+      WorkOrderStatus.CANCELLED,
+    ])('rejects assignment when status is %s', async (status) => {
+      repository.findOneBy.mockResolvedValue(workOrder({ status }));
+
+      await expect(service.assign('any-id', assigneeId)).rejects.toBeInstanceOf(
+        ConflictException,
+      );
+      expect(repository.save).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('updateStatus', () => {
+    it.each([
+      [WorkOrderStatus.OPEN, WorkOrderStatus.CANCELLED],
+      [WorkOrderStatus.ASSIGNED, WorkOrderStatus.IN_PROGRESS],
+      [WorkOrderStatus.IN_PROGRESS, WorkOrderStatus.COMPLETED],
+    ])('allows the transition %s -> %s', async (from, to) => {
+      repository.findOneBy.mockResolvedValue(workOrder({ status: from }));
+      repository.save.mockImplementation((wo) =>
+        Promise.resolve(wo as WorkOrder),
+      );
+
+      const result = await service.updateStatus('any-id', to);
+
+      expect(result.status).toBe(to);
+    });
+
+    it.each([
+      [WorkOrderStatus.OPEN, WorkOrderStatus.COMPLETED],
+      [WorkOrderStatus.OPEN, WorkOrderStatus.IN_PROGRESS],
+      [WorkOrderStatus.COMPLETED, WorkOrderStatus.IN_PROGRESS],
+      [WorkOrderStatus.CANCELLED, WorkOrderStatus.OPEN],
+    ])('rejects the transition %s -> %s', async (from, to) => {
+      repository.findOneBy.mockResolvedValue(workOrder({ status: from }));
+
+      await expect(service.updateStatus('any-id', to)).rejects.toBeInstanceOf(
+        ConflictException,
+      );
+      expect(repository.save).not.toHaveBeenCalled();
+    });
+
+    it('rejects moving to assigned outside the assign endpoint', async () => {
+      repository.findOneBy.mockResolvedValue(
+        workOrder({ status: WorkOrderStatus.OPEN }),
+      );
+
+      await expect(
+        service.updateStatus('any-id', WorkOrderStatus.ASSIGNED),
+      ).rejects.toBeInstanceOf(ConflictException);
     });
   });
 });
