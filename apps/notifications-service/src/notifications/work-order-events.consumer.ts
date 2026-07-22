@@ -5,6 +5,7 @@ import { EXCHANGES, WORK_ORDER_EVENTS } from '@app/contracts';
 import type { WorkOrderEvent } from '@app/contracts';
 import { EventRetryHandler } from './event-retry.handler';
 import { NotificationSender } from './notification-sender';
+import { ProcessedEventsStore } from './processed-events.store';
 
 export const QUEUES = {
   WORK_ORDER_CREATED: 'notifications.work-order-created',
@@ -18,6 +19,7 @@ export class WorkOrderEventsConsumer {
   constructor(
     private readonly sender: NotificationSender,
     private readonly retry: EventRetryHandler,
+    private readonly processed: ProcessedEventsStore,
   ) {}
 
   @RabbitSubscribe({
@@ -51,6 +53,7 @@ export class WorkOrderEventsConsumer {
   }
 
   private async notifyCreated(event: WorkOrderEvent): Promise<void> {
+    if (this.isDuplicate(event)) return;
     this.logger.log(
       `received ${event.type} (${event.eventId}) correlationId=${event.correlationId ?? 'none'}`,
     );
@@ -61,9 +64,11 @@ export class WorkOrderEventsConsumer {
       subject: `New work order: ${event.data.title}`,
       body: `A ${event.data.priority} priority work order was opened for property ${event.data.propertyId}.`,
     });
+    this.processed.mark(event.eventId);
   }
 
   private async notifyCompleted(event: WorkOrderEvent): Promise<void> {
+    if (this.isDuplicate(event)) return;
     this.logger.log(
       `received ${event.type} (${event.eventId}) correlationId=${event.correlationId ?? 'none'}`,
     );
@@ -72,5 +77,14 @@ export class WorkOrderEventsConsumer {
       subject: `Work order completed: ${event.data.title}`,
       body: `The work order for property ${event.data.propertyId} has been completed.`,
     });
+    this.processed.mark(event.eventId);
+  }
+
+  /** At-least-once delivery makes duplicates a matter of when, not if; the
+   * store marks only after a successful send, so retries still go through. */
+  private isDuplicate(event: WorkOrderEvent): boolean {
+    if (!this.processed.has(event.eventId)) return false;
+    this.logger.debug(`duplicate ${event.type} (${event.eventId}) skipped`);
+    return true;
   }
 }

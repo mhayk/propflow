@@ -3,6 +3,7 @@ import type { ConsumeMessage } from 'amqplib';
 import { WORK_ORDER_EVENTS, WorkOrderEvent } from '@app/contracts';
 import { EventRetryHandler } from './event-retry.handler';
 import { NotificationSender } from './notification-sender';
+import { ProcessedEventsStore } from './processed-events.store';
 import { WorkOrderEventsConsumer } from './work-order-events.consumer';
 
 describe('WorkOrderEventsConsumer', () => {
@@ -45,6 +46,7 @@ describe('WorkOrderEventsConsumer', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         WorkOrderEventsConsumer,
+        ProcessedEventsStore,
         { provide: NotificationSender, useValue: sender },
         { provide: EventRetryHandler, useValue: retryStub },
       ],
@@ -79,5 +81,14 @@ describe('WorkOrderEventsConsumer', () => {
         subject: expect.stringContaining('completed') as string,
       }),
     );
+  });
+
+  it('sends once when the same event is delivered twice', async () => {
+    const duplicate = event(WORK_ORDER_EVENTS.CREATED);
+
+    await consumer.onWorkOrderCreated(duplicate, message);
+    await consumer.onWorkOrderCreated(duplicate, message);
+
+    expect(sender.send).toHaveBeenCalledTimes(1);
   });
 });

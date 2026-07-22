@@ -7,6 +7,7 @@ import {
   LoggingNotificationSender,
   NotificationSender,
 } from './notification-sender';
+import { ProcessedEventsStore } from './processed-events.store';
 import { QUEUES, WorkOrderEventsConsumer } from './work-order-events.consumer';
 
 @Module({
@@ -29,6 +30,7 @@ import { QUEUES, WorkOrderEventsConsumer } from './work-order-events.consumer';
   ],
   providers: [
     EventRetryHandler,
+    ProcessedEventsStore,
     WorkOrderEventsConsumer,
     { provide: NotificationSender, useClass: LoggingNotificationSender },
   ],
