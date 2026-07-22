@@ -4,14 +4,55 @@ How the pieces of PropFlow interact — per flow, with the actors that trigger t
 
 **Actors**
 
-| Actor | Interacts via | Typical actions |
-| --- | --- | --- |
-| Tenant | Client app → API Gateway | opens maintenance requests |
-| Property manager | Client app → API Gateway | assigns/tracks work orders, reads summaries and the activity feed |
-| Technician | Client app → API Gateway | moves work orders through the lifecycle |
-| Anthropic API | called by the Work Orders service | classifies requests (category + urgency) |
+| Actor | Role (JWT) | Interacts via | Typical actions |
+| --- | --- | --- | --- |
+| Tenant | `tenant` | Client app → API Gateway | opens maintenance requests |
+| Property manager | `manager` | Client app → API Gateway | manages properties, assigns/tracks work orders, reads the activity feed |
+| Technician | `technician` | Client app → API Gateway | moves work orders through the lifecycle |
+| Anthropic API | — | called by the Work Orders service | classifies requests (category + urgency) |
 
-All HTTP enters through the gateway under the `/api` prefix; no client talks to a service directly, and no service touches another service's database.
+All HTTP enters through the gateway under the `/api` prefix; no client talks to a service directly, and no service touches another service's database. Since phase 8 every business route requires a JWT ([ADR-0008](adr/0008-authentication.md)) — the flow below runs before every other diagram on this page.
+
+## 0. Authentication (login and the guard chain)
+
+Authentication lives at the edge, once: the gateway verifies the token, decides the role, and forwards *identity* (not the token) to services, which trust it because only the gateway can reach them (k8s NetworkPolicy).
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Property manager
+    participant GW as API Gateway
+    participant AU as AuthService
+    participant JG as JwtAuthGuard
+    participant RG as RolesGuard
+    participant WO as Work Orders Service
+
+    Note over User,AU: login — the only public business route
+    User->>GW: POST /api/auth/login (email, password)
+    GW->>AU: validate (constant-time compare)
+    alt valid credentials
+        AU-->>User: accessToken (JWT: sub + role, expires 1h)
+    else invalid
+        AU-->>User: 401 — same error for unknown user or wrong password
+    end
+
+    Note over User,WO: every subsequent request carries the token
+    User->>GW: PATCH /api/work-orders/:id/assign<br/>Authorization: Bearer …
+    GW->>JG: verify signature + expiry
+    alt missing or invalid token
+        JG-->>User: 401 — "who are you?"
+    else verified
+        JG->>JG: user -> request + ALS context
+        JG->>RG: authorize (@Roles: manager)
+        alt role not in the route policy
+            RG-->>User: 403 — "you can't do this"
+        else allowed
+            GW->>WO: proxy with x-request-id + x-user-id
+            Note over WO: identity enters the event envelope (actorId)<br/>and ends up in the audit log — "who did it"
+            WO-->>User: response
+        end
+    end
+```
 
 ---
 

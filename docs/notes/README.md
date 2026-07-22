@@ -11,3 +11,4 @@ Deep dives on the concepts each phase of the roadmap exercises — written as th
 - [Phase 5 — Kafka](phase-5-kafka.md): log vs queue, partitions and keys, consumer groups and replay, idempotent projections, push vs pull, keyset pagination in practice
 - [Phase 6 — AI triage](phase-6-ai-triage.md): LLMs as components (nondeterminism/cost/latency), sync vs async AI, structured outputs, stubbing the model in tests, best-effort semantics, auditable AI decisions
 - [Phase 7 — Production hardening](phase-7-hardening.md): the dual-write fix, SKIP LOCKED relays, idempotency per consumer, probes with consequences, replica counts as documentation
+- [Phase 8 — Auth](phase-8-auth.md): 401 vs 403, auth placement in microservices, JWT trade-offs, secure-by-default guards, timing-safe compares, identity across sync and async boundaries

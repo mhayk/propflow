@@ -46,6 +46,7 @@ Each service owns its data (database-per-service). Services communicate synchron
 | Testing | Jest (unit + e2e), Supertest |
 | Infra | Docker Compose (dev), Kubernetes ([k8s/](k8s)), GitHub Actions CI |
 | Reliability | Transactional outbox + idempotent consumers — see [ADR-0007](docs/adr/0007-outbox-pattern.md) |
+| Auth | JWT at the gateway, roles per route — see [ADR-0008](docs/adr/0008-authentication.md) |
 
 ## Getting started
 
@@ -68,6 +69,15 @@ npm run test:e2e  # end-to-end
 
 RabbitMQ management UI: http://localhost:15672 (propflow / propflow).
 
+Every business route requires a JWT. Log in with a demo user (see `.env.example` to customize):
+
+```bash
+curl -s -X POST localhost:3000/api/auth/login \
+  -H 'content-type: application/json' \
+  -d '{"email":"manager@propflow.dev","password":"propflow"}'
+# -> { "accessToken": "...", "role": "manager" }  — send as Authorization: Bearer <token>
+```
+
 ## Roadmap
 
 Each phase is a self-contained increment with tests and documentation.
@@ -80,6 +90,7 @@ Each phase is a self-contained increment with tests and documentation.
 - [x] **Phase 5 — Kafka**: event streaming for an audit/activity feed; RabbitMQ vs Kafka in practice
 - [x] **Phase 6 — AI integration**: LLM-powered triage of maintenance requests (urgency + category classification)
 - [x] **Phase 7 — Production hardening**: outbox pattern, idempotent consumers, Kubernetes manifests
+- [x] **Phase 8 — Authentication & authorization**: JWT at the edge, role-based routes, identity propagated into the audit trail
 
 ## Documentation
 
