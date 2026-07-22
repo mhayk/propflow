@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notifications
+  labels:
+    app: notifications
+spec:
+  # Single replica: the processed-events dedup store is in-memory and
+  # per-instance (documented limitation — a shared store lifts this).
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notifications
+  template:
+    metadata:
+      labels:
+        app: notifications
+    spec:
+      containers:
+        - name: notifications
+          image: ghcr.io/mhayk/propflow-notifications-service:latest
+          ports:
+            - containerPort: 3002
+          env:
+            - name: NOTIFICATIONS_PORT
+              value: '3002'
+          envFrom:
+            - configMapRef:
+                name: propflow-config
+            - secretRef:
+                name: propflow-secrets
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3002
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 3002
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 256Mi
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notifications
+spec:
+  selector:
+    app: notifications
+  ports:
+    - port: 3002
+      targetPort: 3002

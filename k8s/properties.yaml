@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: properties
+  labels:
+    app: properties
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: properties
+  template:
+    metadata:
+      labels:
+        app: properties
+    spec:
+      containers:
+        - name: properties
+          image: ghcr.io/mhayk/propflow-properties-service:latest
+          ports:
+            - containerPort: 3003
+          env:
+            - name: PROPERTIES_PORT
+              value: '3003'
+          envFrom:
+            - configMapRef:
+                name: propflow-config
+            - secretRef:
+                name: propflow-secrets
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3003
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 3003
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 256Mi
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: properties
+spec:
+  selector:
+    app: properties
+  ports:
+    - port: 3003
+      targetPort: 3003

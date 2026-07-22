@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: audit
+  labels:
+    app: audit
+spec:
+  # Single replica joins the consumer group alone; scaling out just rebalances
+  # partitions across replicas — safe because ingestion is idempotent.
+  replicas: 1
+  selector:
+    matchLabels:
+      app: audit
+  template:
+    metadata:
+      labels:
+        app: audit
+    spec:
+      containers:
+        - name: audit
+          image: ghcr.io/mhayk/propflow-audit-service:latest
+          ports:
+            - containerPort: 3004
+          env:
+            - name: AUDIT_PORT
+              value: '3004'
+          envFrom:
+            - configMapRef:
+                name: propflow-config
+            - secretRef:
+                name: propflow-secrets
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3004
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 3004
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 256Mi
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: audit
+spec:
+  selector:
+    app: audit
+  ports:
+    - port: 3004
+      targetPort: 3004
