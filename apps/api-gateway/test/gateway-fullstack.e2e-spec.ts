@@ -108,13 +108,11 @@ describe('Gateway full-stack (e2e)', () => {
 
     // Identity survived the whole chain: JWT at the gateway -> x-user-id
     // header -> ALS context -> event envelope staged in the outbox.
-    const rows: { actor: string }[] = (await workOrdersApp
-      .get(DataSource)
-      .query(
-        `SELECT payload->>'actorId' AS actor FROM outbox_events
+    const rows: { actor: string }[] = await workOrdersApp.get(DataSource).query(
+      `SELECT payload->>'actorId' AS actor FROM outbox_events
          WHERE payload->'data'->>'workOrderId' = $1`,
-        [workOrderId],
-      )) as { actor: string }[];
+      [workOrderId],
+    );
     expect(rows[0]?.actor).toBe('manager@propflow.dev');
   });
 
