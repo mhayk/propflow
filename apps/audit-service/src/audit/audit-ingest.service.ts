@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { WorkOrderEvent } from '@app/contracts';
 import { AuditEvent } from './audit-event.entity';
 
@@ -30,8 +31,11 @@ export class AuditIngestService {
         propertyId: event.data.propertyId,
         correlationId: event.correlationId,
         occurredAt: new Date(event.occurredAt),
-        payload: event.data as unknown as Record<string, unknown>,
-      })
+        // The jsonb column defeats QueryDeepPartialEntity's mapped type
+        // (nullable fields inside the payload are rejected); the cast is the
+        // standard TypeORM escape hatch for json inserts.
+        payload: { ...event.data },
+      } as QueryDeepPartialEntity<AuditEvent>)
       .orIgnore()
       .execute();
 
