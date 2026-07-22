@@ -6,6 +6,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { TriageCategory, TriageUrgency } from '@app/contracts';
 import { WorkOrderPriority, WorkOrderStatus } from './work-order.enums';
 
 @Entity('work_orders')
@@ -34,6 +35,20 @@ export class WorkOrder {
 
   @Column({ name: 'assignee_id', type: 'uuid', nullable: true })
   assigneeId!: string | null;
+
+  // AI triage is advisory and asynchronous: all columns are nullable because
+  // an order exists before (and possibly without) a classification.
+  @Column({ name: 'triage_category', type: 'varchar', length: 30, nullable: true })
+  triageCategory!: TriageCategory | null;
+
+  @Column({ name: 'triage_urgency', type: 'varchar', length: 10, nullable: true })
+  triageUrgency!: TriageUrgency | null;
+
+  @Column({ name: 'triage_reasoning', type: 'text', nullable: true })
+  triageReasoning!: string | null;
+
+  @Column({ name: 'triaged_at', type: 'timestamptz', nullable: true })
+  triagedAt!: Date | null;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;

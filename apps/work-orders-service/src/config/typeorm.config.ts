@@ -1,5 +1,6 @@
 import { DataSourceOptions } from 'typeorm';
 import { CreateWorkOrdersTable1753056000000 } from '../database/migrations/1753056000000-create-work-orders-table';
+import { AddTriageColumns1753142000000 } from '../database/migrations/1753142000000-add-triage-columns';
 import { WorkOrder } from '../work-orders/work-order.entity';
 
 /**
@@ -18,7 +19,10 @@ export function buildDataSourceOptions(
     database: env.WORK_ORDERS_DB_NAME ?? 'work_orders',
     // Explicit lists (no glob paths): globs break under webpack bundling and jest.
     entities: [WorkOrder],
-    migrations: [CreateWorkOrdersTable1753056000000],
+    migrations: [
+      CreateWorkOrdersTable1753056000000,
+      AddTriageColumns1753142000000,
+    ],
     // Schema changes only go through reviewed migrations, never auto-sync.
     synchronize: false,
     migrationsRun: true,

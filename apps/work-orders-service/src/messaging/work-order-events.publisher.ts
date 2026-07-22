@@ -31,9 +31,18 @@ export class WorkOrderEventsPublisher {
         workOrderId: workOrder.id,
         propertyId: workOrder.propertyId,
         title: workOrder.title,
+        description: workOrder.description,
         priority: workOrder.priority,
         status: workOrder.status,
         assigneeId: workOrder.assigneeId,
+        triage:
+          workOrder.triageCategory && workOrder.triageUrgency
+            ? {
+                category: workOrder.triageCategory,
+                urgency: workOrder.triageUrgency,
+                reasoning: workOrder.triageReasoning ?? '',
+              }
+            : null,
       },
     };
 
