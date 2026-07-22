@@ -1,6 +1,6 @@
 # Sequence flows
 
-How the pieces of PropFlow interact — per flow, with the actors that trigger them and the internal components of each service. These complement the [architecture diagram](../README.md#architecture) (static structure) and the [ADRs](adr) (why it's built this way): here the question is *what happens, in what order*.
+How the pieces of PropFlow interact — per flow, with the actors that trigger them and the internal components of each service. These complement the [architecture diagram](index.md#architecture) (static structure) and the [ADRs](adr/README.md) (why it's built this way): here the question is *what happens, in what order*.
 
 **Actors**
 
