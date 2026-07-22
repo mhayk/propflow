@@ -8,7 +8,7 @@ This repository doubles as a living study project: every architectural decision 
 
 Property managers handle a constant stream of maintenance requests: a tenant reports a leaking tap, the request must be triaged, assigned to a contractor, tracked to completion, and everyone involved must be notified along the way. PropFlow models that flow:
 
-- **Work Orders** — the core aggregate: maintenance requests and their lifecycle (`open → assigned → in_progress → completed`).
+- **Work Orders** — the core aggregate: maintenance requests and their lifecycle (`open → assigned → in_progress → completed`), with async LLM triage (category + urgency).
 - **Properties** — buildings and units that work orders belong to.
 - **Notifications** — reacts to domain events (e.g. `work-order.created`) asynchronously.
 - **Audit** — projects the Kafka event stream into a queryable activity feed.
@@ -23,6 +23,8 @@ flowchart LR
     GW --> AU[Audit Service]
     WO -->|domain events| MQ[(RabbitMQ)]
     WO -->|audit stream| KF[(Kafka)]
+    MQ -->|created events| WO
+    WO -.->|triage| AI[Anthropic API]
     MQ --> NT[Notifications Service]
     KF --> AU
     WO --> DB1[(PostgreSQL)]
@@ -40,6 +42,7 @@ Each service owns its data (database-per-service). Services communicate synchron
 | Framework | NestJS (monorepo mode) |
 | Database | PostgreSQL |
 | Messaging | RabbitMQ (work distribution) + Kafka (audit stream) — see [ADR-0002](docs/adr/0002-rabbitmq-first-kafka-later.md) |
+| AI | Anthropic Claude — async work-order triage, see [ADR-0006](docs/adr/0006-llm-triage.md) |
 | Testing | Jest (unit + e2e), Supertest |
 | Infra | Docker Compose, GitHub Actions CI |
 
@@ -74,7 +77,7 @@ Each phase is a self-contained increment with tests and documentation.
 - [x] **Phase 3 — Properties service + API Gateway**: service composition, inter-service communication patterns
 - [x] **Phase 4 — Observability**: structured logging, correlation ids, Prometheus metrics, liveness/readiness probes
 - [x] **Phase 5 — Kafka**: event streaming for an audit/activity feed; RabbitMQ vs Kafka in practice
-- [ ] **Phase 6 — AI integration**: LLM-powered triage of maintenance requests (urgency + category classification)
+- [x] **Phase 6 — AI integration**: LLM-powered triage of maintenance requests (urgency + category classification)
 - [ ] **Phase 7 — Production hardening**: outbox pattern, idempotent consumers, Kubernetes manifests
 
 ## Documentation

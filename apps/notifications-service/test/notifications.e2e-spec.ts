@@ -46,6 +46,7 @@ describe('Notifications event flow (e2e)', () => {
         workOrderId: randomUUID(),
         propertyId: randomUUID(),
         title,
+        description: 'raised by the notifications e2e suite',
         priority: 'high',
         status: 'open',
         assigneeId: null,

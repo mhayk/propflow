@@ -5,6 +5,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { buildLoggerOptions, MetricsModule } from '@app/observability';
 import { HealthModule } from './health/health.module';
 import { buildDataSourceOptions } from './config/typeorm.config';
+import { TriageModule } from './triage/triage.module';
 import { WorkOrdersModule } from './work-orders/work-orders.module';
 
 @Module({
@@ -18,6 +19,7 @@ import { WorkOrdersModule } from './work-orders/work-orders.module';
       useFactory: () => buildDataSourceOptions(process.env),
     }),
     WorkOrdersModule,
+    TriageModule,
   ],
 })
 export class AppModule {}

@@ -46,6 +46,7 @@ describe('Audit stream (e2e)', () => {
       workOrderId,
       propertyId: randomUUID(),
       title: `e2e ${randomUUID()}`,
+      description: 'raised by the audit e2e suite',
       priority: 'high',
       status: 'open',
       assigneeId: null,

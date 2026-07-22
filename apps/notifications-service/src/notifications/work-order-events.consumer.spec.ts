@@ -32,6 +32,7 @@ describe('WorkOrderEventsConsumer', () => {
       workOrderId: '55555555-5555-4555-8555-555555555555',
       propertyId: '11111111-1111-4111-8111-111111111111',
       title: 'Leaking tap in kitchen',
+      description: 'Constant drip under the sink',
       priority: 'high',
       status: 'open',
       assigneeId: null,

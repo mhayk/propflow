@@ -11,6 +11,10 @@ export interface WorkOrderDto {
   priority: string;
   status: string;
   assigneeId: string | null;
+  triageCategory: string | null;
+  triageUrgency: string | null;
+  triageReasoning: string | null;
+  triagedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
