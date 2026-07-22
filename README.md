@@ -66,7 +66,7 @@ Each service owns its data (database-per-service). Services communicate synchron
 | Observability | ![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=flat-square&logo=prometheus&logoColor=white) ![Pino](https://img.shields.io/badge/Pino-687634?style=flat-square) | RED metrics, JSON logs, correlation ids via ALS — [ADR-0005](docs/adr/0005-observability-stack.md) |
 | Testing | ![Jest](https://img.shields.io/badge/Jest-C21325?style=flat-square&logo=jest&logoColor=white) ![Supertest](https://img.shields.io/badge/Supertest-2D3748?style=flat-square) | 70+ unit tests, e2e per service, full-stack composition suite — [coverage report](https://mhayk.github.io/propflow/coverage/) |
 | Infra & CI | ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white) ![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=flat-square&logo=kubernetes&logoColor=white) ![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white) | Compose for dev, manifests + NetworkPolicies in [k8s/](k8s) |
-| API & docs | ![OpenAPI](https://img.shields.io/badge/OpenAPI-85EA2D?style=flat-square&logo=swagger&logoColor=black) ![Mermaid](https://img.shields.io/badge/Mermaid-FF3670?style=flat-square&logo=mermaid&logoColor=white) ![Material for MkDocs](https://img.shields.io/badge/MkDocs%20Material-526CFE?style=flat-square&logo=materialformkdocs&logoColor=white) | Swagger at `/api/docs`, [hosted docs site](https://mhayk.github.io/propflow/) |
+| API & docs | ![OpenAPI](https://img.shields.io/badge/OpenAPI-85EA2D?style=flat-square&logo=swagger&logoColor=black) ![AsyncAPI](https://img.shields.io/badge/AsyncAPI-4B4FCE?style=flat-square) ![Mermaid](https://img.shields.io/badge/Mermaid-FF3670?style=flat-square&logo=mermaid&logoColor=white) ![Material for MkDocs](https://img.shields.io/badge/MkDocs%20Material-526CFE?style=flat-square&logo=materialformkdocs&logoColor=white) | Swagger at `/api/docs`, [AsyncAPI rendered](https://mhayk.github.io/propflow/asyncapi/), [hosted docs site](https://mhayk.github.io/propflow/) |
 
 ## Getting started
 
@@ -117,7 +117,7 @@ Each phase is a self-contained increment with tests and documentation.
 **Hosted docs: [mhayk.github.io/propflow](https://mhayk.github.io/propflow/)** — same content, with rendered diagrams, navigation and search.
 
 - [API reference](docs/api.md) — every endpoint with its required role; interactive OpenAPI at `/api/docs` when running
-- [Event catalog](docs/events.md) — the async contract: envelope, every event with producers/consumers, broker topology, delivery guarantees
+- [Event catalog](docs/events.md) — the async contract: envelope, every event with producers/consumers, broker topology, delivery guarantees; formal [AsyncAPI spec](asyncapi.yaml) validated in CI and [rendered on the docs site](https://mhayk.github.io/propflow/asyncapi/)
 - [Architecture Decision Records](docs/adr) — every significant decision and its trade-offs
 - [Sequence flows](docs/flows.md) — how actors and services interact, flow by flow (auth, write path, outbox relay, event fan-out, AI triage, retries/DLQ, composition, activity feed)
 - [Study notes](docs/notes) — deep dives on the concepts each phase exercises

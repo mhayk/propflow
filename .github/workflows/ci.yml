@@ -22,6 +22,9 @@ jobs:
       - name: Lint
         run: npm run lint -- --no-fix
 
+      - name: Validate the AsyncAPI contract
+        run: npx --yes -p @asyncapi/cli@6.0.2 asyncapi validate asyncapi.yaml --fail-severity=warn
+
       - name: Build all apps
         run: npm run build api-gateway && npm run build work-orders-service && npm run build notifications-service && npm run build properties-service && npm run build audit-service
 

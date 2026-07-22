@@ -1,6 +1,6 @@
 # Event catalog
 
-The asynchronous contract of the platform — the counterpart of the [API reference](api.md) for everything that travels through brokers instead of HTTP. The typed source of truth is [`libs/contracts`](https://github.com/mhayk/propflow/tree/main/libs/contracts/src); this page is its narrative form. How each event flows end to end: [sequence diagrams](flows.md).
+The asynchronous contract of the platform — the counterpart of the [API reference](api.md) for everything that travels through brokers instead of HTTP. The typed source of truth is [`libs/contracts`](https://github.com/mhayk/propflow/tree/main/libs/contracts/src); this page is its narrative form, and the **formal spec is [AsyncAPI](https://mhayk.github.io/propflow/asyncapi/)** ([`asyncapi.yaml`](https://github.com/mhayk/propflow/blob/main/asyncapi.yaml), validated in CI) — the industry standard for event-driven APIs, rendered interactively the way OpenAPI is at `/api/docs`. How each event flows end to end: [sequence diagrams](flows.md).
 
 ## The envelope
 

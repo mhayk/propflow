@@ -45,6 +45,12 @@ jobs:
           pip install 'mkdocs-material==9.*' 'mkdocs<2'
           mkdocs build
 
+      - name: Generate AsyncAPI UI
+        run: |
+          npx --yes -p @asyncapi/cli@6.0.2 asyncapi generate fromTemplate \
+            asyncapi.yaml @asyncapi/html-template@3.5.6 \
+            --output site/asyncapi --force-write
+
       - name: Embed coverage report and badge endpoint
         run: |
           cp -r coverage/lcov-report site/coverage
