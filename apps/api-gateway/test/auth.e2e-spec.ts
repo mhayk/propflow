@@ -77,4 +77,8 @@ describe('Auth (e2e)', () => {
     await request(app.getHttpServer()).get('/api/health').expect(200);
     await request(app.getHttpServer()).get('/api/metrics').expect(200);
   });
+
+  it('serves the OpenAPI docs without a token', async () => {
+    await request(app.getHttpServer()).get('/api/docs').expect(200);
+  });
 });

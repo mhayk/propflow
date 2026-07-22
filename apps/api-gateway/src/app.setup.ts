@@ -1,4 +1,5 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger } from 'nestjs-pino';
 import { requestContextMiddleware } from '@app/observability';
 
@@ -16,5 +17,25 @@ export function configureApp(app: INestApplication): void {
       forbidNonWhitelisted: true,
       transform: true,
     }),
+  );
+
+  // OpenAPI docs, generated from the controllers so they cannot drift.
+  // The gateway is the public surface, so it is the only app that publishes
+  // them; docs/api.md is the GitHub-readable companion.
+  const openApiConfig = new DocumentBuilder()
+    .setTitle('PropFlow API')
+    .setDescription(
+      'Public API of the PropFlow platform, served by the gateway. ' +
+        'Authenticate via POST /api/auth/login, then use the Authorize ' +
+        'button with the returned accessToken. Sequence diagrams for every ' +
+        'flow: docs/flows.md in the repository.',
+    )
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+  SwaggerModule.setup(
+    'api/docs',
+    app,
+    SwaggerModule.createDocument(app, openApiConfig),
   );
 }
