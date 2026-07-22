@@ -23,3 +23,6 @@ coverage/
 
 # MkDocs build output
 /site
+
+# Generated OpenAPI export
+openapi.json

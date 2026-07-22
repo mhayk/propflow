@@ -38,6 +38,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - API reference: api.md
+  - OpenAPI (Scalar): https://mhayk.github.io/propflow/api-reference/
   - Event catalog: events.md
   - AsyncAPI: https://mhayk.github.io/propflow/asyncapi/
   - Sequence flows: flows.md

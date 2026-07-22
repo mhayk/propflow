@@ -36,6 +36,9 @@ jobs:
           npm ci
           npm run test:cov
 
+      - name: Export the OpenAPI document
+        run: npm run openapi:export
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -50,6 +53,9 @@ jobs:
           npx --yes -p @asyncapi/cli@6.0.2 asyncapi generate fromTemplate \
             asyncapi.yaml @asyncapi/html-template@3.5.6 \
             --output site/asyncapi --force-write
+
+      - name: Embed the OpenAPI document (Scalar page ships in docs/)
+        run: cp openapi.json site/api-reference/openapi.json
 
       - name: Embed coverage report and badge endpoint
         run: |
