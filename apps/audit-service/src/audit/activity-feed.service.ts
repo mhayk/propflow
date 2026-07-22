@@ -10,6 +10,7 @@ export interface ActivityItem {
   workOrderId: string;
   propertyId: string;
   correlationId: string | null;
+  actorId: string | null;
   occurredAt: string;
   payload: Record<string, unknown>;
 }
@@ -59,6 +60,7 @@ export class ActivityFeedService {
         workOrderId: row.workOrderId,
         propertyId: row.propertyId,
         correlationId: row.correlationId,
+        actorId: row.actorId,
         occurredAt: row.occurredAt.toISOString(),
         payload: row.payload,
       })),

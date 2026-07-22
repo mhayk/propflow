@@ -41,6 +41,11 @@ export class AuditEvent {
   })
   correlationId!: string | null;
 
+  /** Who performed the action (JWT subject) — null for system-initiated
+   * events (AI triage) and events from before authentication existed. */
+  @Column({ name: 'actor_id', type: 'varchar', length: 320, nullable: true })
+  actorId!: string | null;
+
   @Column({ name: 'occurred_at', type: 'timestamptz' })
   occurredAt!: Date;
 

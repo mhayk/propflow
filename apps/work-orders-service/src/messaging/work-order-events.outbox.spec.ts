@@ -59,13 +59,27 @@ describe('WorkOrderEventsOutbox', () => {
     );
   });
 
-  it('stamps the ambient request id as correlationId', async () => {
-    await runWithRequestContext({ requestId: 'req-123' }, () => stage());
+  it('stamps the ambient request id and actor from the request context', async () => {
+    await runWithRequestContext(
+      { requestId: 'req-123', userId: 'manager@propflow.dev' },
+      () => stage(),
+    );
 
     const [, staged] = manager.insert.mock.calls[0] as [
       unknown,
-      { payload: { correlationId: string | null } },
+      { payload: { correlationId: string | null; actorId: string | null } },
     ];
     expect(staged.payload.correlationId).toBe('req-123');
+    expect(staged.payload.actorId).toBe('manager@propflow.dev');
+  });
+
+  it('stages a null actor outside any request (system-initiated events)', async () => {
+    await stage();
+
+    const [, staged] = manager.insert.mock.calls[0] as [
+      unknown,
+      { payload: { actorId: string | null } },
+    ];
+    expect(staged.payload.actorId).toBeNull();
   });
 });

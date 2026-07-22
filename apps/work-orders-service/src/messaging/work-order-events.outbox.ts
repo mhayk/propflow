@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { WorkOrderEvent, WorkOrderEventType } from '@app/contracts';
-import { currentRequestId } from '@app/observability';
+import { currentRequestId, currentUserId } from '@app/observability';
 import { WorkOrder } from '../work-orders/work-order.entity';
 import { OutboxEvent } from './outbox-event.entity';
 
@@ -23,6 +23,9 @@ export class WorkOrderEventsOutbox {
       type,
       occurredAt: new Date().toISOString(),
       correlationId: currentRequestId() ?? null,
+      // Null for system-initiated events (the triage consumer runs outside
+      // any HTTP request) — the audit log records "who", or that no one did.
+      actorId: currentUserId() ?? null,
       data: {
         workOrderId: workOrder.id,
         propertyId: workOrder.propertyId,

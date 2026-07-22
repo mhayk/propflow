@@ -30,6 +30,7 @@ export class AuditIngestService {
         workOrderId: event.data.workOrderId,
         propertyId: event.data.propertyId,
         correlationId: event.correlationId,
+        actorId: event.actorId ?? null,
         occurredAt: new Date(event.occurredAt),
         // The jsonb column defeats QueryDeepPartialEntity's mapped type
         // (nullable fields inside the payload are rejected); the cast is the
