@@ -2,6 +2,7 @@
 
 <p align="center">
   <a href="https://github.com/mhayk/propflow/actions/workflows/ci.yml"><img src="https://github.com/mhayk/propflow/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://mhayk.github.io/propflow/coverage/"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fmhayk.github.io%2Fpropflow%2Fcoverage%2Fbadge.json" alt="Unit coverage"></a>
   <a href="https://mhayk.github.io/propflow/"><img src="https://img.shields.io/badge/docs-live-2ea44f?style=flat&logo=materialformkdocs&logoColor=white" alt="Docs"></a>
   <a href="docs/adr"><img src="https://img.shields.io/badge/ADRs-8-blue?style=flat" alt="ADRs"></a>
 </p>
@@ -63,7 +64,7 @@ Each service owns its data (database-per-service). Services communicate synchron
 | AI | ![Claude](https://img.shields.io/badge/Anthropic%20Claude-D97757?style=flat-square&logo=claude&logoColor=white) | Async LLM triage, structured outputs, best-effort — [ADR-0006](docs/adr/0006-llm-triage.md) |
 | Auth | ![JWT](https://img.shields.io/badge/JWT-000000?style=flat-square&logo=jsonwebtokens&logoColor=white) | Verified once at the edge, roles per route, actor in every event — [ADR-0008](docs/adr/0008-authentication.md) |
 | Observability | ![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=flat-square&logo=prometheus&logoColor=white) ![Pino](https://img.shields.io/badge/Pino-687634?style=flat-square) | RED metrics, JSON logs, correlation ids via ALS — [ADR-0005](docs/adr/0005-observability-stack.md) |
-| Testing | ![Jest](https://img.shields.io/badge/Jest-C21325?style=flat-square&logo=jest&logoColor=white) ![Supertest](https://img.shields.io/badge/Supertest-2D3748?style=flat-square) | 70+ unit tests, e2e per service, full-stack composition suite |
+| Testing | ![Jest](https://img.shields.io/badge/Jest-C21325?style=flat-square&logo=jest&logoColor=white) ![Supertest](https://img.shields.io/badge/Supertest-2D3748?style=flat-square) | 70+ unit tests, e2e per service, full-stack composition suite — [coverage report](https://mhayk.github.io/propflow/coverage/) |
 | Infra & CI | ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white) ![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=flat-square&logo=kubernetes&logoColor=white) ![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white) | Compose for dev, manifests + NetworkPolicies in [k8s/](k8s) |
 | API & docs | ![OpenAPI](https://img.shields.io/badge/OpenAPI-85EA2D?style=flat-square&logo=swagger&logoColor=black) ![Mermaid](https://img.shields.io/badge/Mermaid-FF3670?style=flat-square&logo=mermaid&logoColor=white) ![Material for MkDocs](https://img.shields.io/badge/MkDocs%20Material-526CFE?style=flat-square&logo=materialformkdocs&logoColor=white) | Swagger at `/api/docs`, [hosted docs site](https://mhayk.github.io/propflow/) |
 
@@ -119,3 +120,4 @@ Each phase is a self-contained increment with tests and documentation.
 - [Architecture Decision Records](docs/adr) — every significant decision and its trade-offs
 - [Sequence flows](docs/flows.md) — how actors and services interact, flow by flow (auth, write path, outbox relay, event fan-out, AI triage, retries/DLQ, composition, activity feed)
 - [Study notes](docs/notes) — deep dives on the concepts each phase exercises
+- [Unit coverage report](https://mhayk.github.io/propflow/coverage/) — line-by-line, republished on every push; the badge above tracks it. Unit scope only: the gateway's HTTP surface is exercised by the e2e suites, which don't count here

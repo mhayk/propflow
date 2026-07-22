@@ -1,12 +1,11 @@
 name: Docs
 
+# Publishes the documentation site AND the unit-test coverage report it
+# embeds — so it runs on every push to main, not only on doc changes:
+# coverage must track the code.
 on:
   push:
     branches: [main]
-    paths:
-      - 'docs/**'
-      - mkdocs.yml
-      - .github/workflows/docs.yml
   workflow_dispatch:
 
 permissions:
@@ -27,6 +26,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Unit tests with coverage
+        run: |
+          npm ci
+          npm run test:cov
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -35,6 +44,15 @@ jobs:
         run: |
           pip install 'mkdocs-material==9.*' 'mkdocs<2'
           mkdocs build
+
+      - name: Embed coverage report and badge endpoint
+        run: |
+          cp -r coverage/lcov-report site/coverage
+          node -e "const s=require('./coverage/coverage-summary.json').total; \
+            require('fs').writeFileSync('site/coverage/badge.json', JSON.stringify({ \
+              schemaVersion:1,label:'unit coverage',message:s.statements.pct+'%', \
+              color:s.statements.pct>=90?'brightgreen':s.statements.pct>=75?'green': \
+              s.statements.pct>=60?'yellowgreen':s.statements.pct>=45?'yellow':'red'}))"
 
       - uses: actions/upload-pages-artifact@v3
         with:

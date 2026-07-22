@@ -86,7 +86,20 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "apps/*/src/**/*.ts",
+      "libs/*/src/**/*.ts",
+      "!**/*.spec.ts",
+      "!**/main.ts",
+      "!**/*.module.ts",
+      "!**/app.setup.ts",
+      "!**/migrations/**",
+      "!**/database/data-source.ts",
+      "!**/index.ts"
+    ],
+    "coverageReporters": [
+      "text-summary",
+      "lcov",
+      "json-summary"
     ],
     "coverageDirectory": "./coverage",
     "testEnvironment": "node",
