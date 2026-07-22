@@ -117,6 +117,7 @@ Each phase is a self-contained increment with tests and documentation.
 **Hosted docs: [mhayk.github.io/propflow](https://mhayk.github.io/propflow/)** — same content, with rendered diagrams, navigation and search.
 
 - [API reference](docs/api.md) — every endpoint with its required role; interactive OpenAPI at `/api/docs` when running
+- [Event catalog](docs/events.md) — the async contract: envelope, every event with producers/consumers, broker topology, delivery guarantees
 - [Architecture Decision Records](docs/adr) — every significant decision and its trade-offs
 - [Sequence flows](docs/flows.md) — how actors and services interact, flow by flow (auth, write path, outbox relay, event fan-out, AI triage, retries/DLQ, composition, activity feed)
 - [Study notes](docs/notes) — deep dives on the concepts each phase exercises

@@ -1,6 +1,6 @@
 # API reference
 
-The public API is served by the gateway under `/api`. **Interactive OpenAPI docs live at [`/api/docs`](http://localhost:3000/api/docs)** when the gateway is running — generated from the controllers, so they can't drift; this page is the GitHub-readable summary. How each flow works internally: [sequence diagrams](flows.md).
+The public API is served by the gateway under `/api`. **Interactive OpenAPI docs live at [`/api/docs`](http://localhost:3000/api/docs)** when the gateway is running — generated from the controllers, so they can't drift; this page is the GitHub-readable summary. How each flow works internally: [sequence diagrams](flows.md). The asynchronous side of the contract — domain events, brokers, delivery guarantees — lives in the [event catalog](events.md).
 
 ## Authentication
 
