@@ -38,10 +38,20 @@ export class WorkOrder {
 
   // AI triage is advisory and asynchronous: all columns are nullable because
   // an order exists before (and possibly without) a classification.
-  @Column({ name: 'triage_category', type: 'varchar', length: 30, nullable: true })
+  @Column({
+    name: 'triage_category',
+    type: 'varchar',
+    length: 30,
+    nullable: true,
+  })
   triageCategory!: TriageCategory | null;
 
-  @Column({ name: 'triage_urgency', type: 'varchar', length: 10, nullable: true })
+  @Column({
+    name: 'triage_urgency',
+    type: 'varchar',
+    length: 10,
+    nullable: true,
+  })
   triageUrgency!: TriageUrgency | null;
 
   @Column({ name: 'triage_reasoning', type: 'text', nullable: true })

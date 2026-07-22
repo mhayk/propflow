@@ -83,7 +83,9 @@ export class AnthropicTriageClassifier extends TriageClassifier {
       // Triage must never break the event flow: rate limits, outages and
       // bad requests all degrade to "no classification".
       if (error instanceof Anthropic.APIError) {
-        this.logger.error(`Anthropic API error ${error.status}: ${error.message}`);
+        this.logger.error(
+          `Anthropic API error ${error.status}: ${error.message}`,
+        );
       } else {
         this.logger.error(
           'unexpected triage failure',
