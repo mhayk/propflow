@@ -44,7 +44,8 @@ Each service owns its data (database-per-service). Services communicate synchron
 | Messaging | RabbitMQ (work distribution) + Kafka (audit stream) — see [ADR-0002](docs/adr/0002-rabbitmq-first-kafka-later.md) |
 | AI | Anthropic Claude — async work-order triage, see [ADR-0006](docs/adr/0006-llm-triage.md) |
 | Testing | Jest (unit + e2e), Supertest |
-| Infra | Docker Compose, GitHub Actions CI |
+| Infra | Docker Compose (dev), Kubernetes ([k8s/](k8s)), GitHub Actions CI |
+| Reliability | Transactional outbox + idempotent consumers — see [ADR-0007](docs/adr/0007-outbox-pattern.md) |
 
 ## Getting started
 
@@ -78,7 +79,7 @@ Each phase is a self-contained increment with tests and documentation.
 - [x] **Phase 4 — Observability**: structured logging, correlation ids, Prometheus metrics, liveness/readiness probes
 - [x] **Phase 5 — Kafka**: event streaming for an audit/activity feed; RabbitMQ vs Kafka in practice
 - [x] **Phase 6 — AI integration**: LLM-powered triage of maintenance requests (urgency + category classification)
-- [ ] **Phase 7 — Production hardening**: outbox pattern, idempotent consumers, Kubernetes manifests
+- [x] **Phase 7 — Production hardening**: outbox pattern, idempotent consumers, Kubernetes manifests
 
 ## Documentation
 
