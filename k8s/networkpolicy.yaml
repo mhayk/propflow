@@ -1,0 +1,34 @@
+# The internal trust boundary (ADR-0008): services accept the gateway's
+# x-user-id header because ONLY the gateway can reach them — enforced here,
+# at the network layer, not re-verified per request in every service.
+#
+# Requires a CNI that implements NetworkPolicy (Cilium, Calico, ...).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: services-only-from-gateway
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app
+        operator: In
+        values: [work-orders, properties, notifications, audit]
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: api-gateway
+---
+# The gateway is the single public entry point; everything else is internal.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: gateway-open-ingress
+spec:
+  podSelector:
+    matchLabels:
+      app: api-gateway
+  policyTypes: [Ingress]
+  ingress:
+    - {} # from anywhere (fronted by the cluster's ingress/load balancer)
