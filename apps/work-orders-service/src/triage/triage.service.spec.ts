@@ -1,14 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { DataSource, EntityManager } from 'typeorm';
 import { WORK_ORDER_EVENTS, WorkOrderTriage } from '@app/contracts';
-import { WorkOrderEventsPublisher } from '../messaging/work-order-events.publisher';
+import { WorkOrderEventsOutbox } from '../messaging/work-order-events.outbox';
 import { WorkOrder } from '../work-orders/work-order.entity';
 import { TriageService } from './triage.service';
 
 describe('TriageService', () => {
   let service: TriageService;
-  let repository: { findOneBy: jest.Mock; save: jest.Mock };
-  let events: { publish: jest.Mock };
+  let repository: { findOneBy: jest.Mock };
+  let manager: { save: jest.Mock };
+  let outbox: { stage: jest.Mock };
 
   const triage: WorkOrderTriage = {
     category: 'plumbing',
@@ -26,30 +28,34 @@ describe('TriageService', () => {
     }) as WorkOrder;
 
   beforeEach(async () => {
-    repository = {
-      findOneBy: jest.fn(),
-      save: jest.fn().mockImplementation((entity: WorkOrder) => entity),
+    repository = { findOneBy: jest.fn() };
+    manager = { save: jest.fn().mockImplementation((wo: WorkOrder) => wo) };
+    const dataSource = {
+      transaction: jest.fn((cb: (m: EntityManager) => unknown): unknown =>
+        cb(manager as unknown as EntityManager),
+      ),
     };
-    events = { publish: jest.fn().mockResolvedValue(undefined) };
+    outbox = { stage: jest.fn().mockResolvedValue(undefined) };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TriageService,
         { provide: getRepositoryToken(WorkOrder), useValue: repository },
-        { provide: WorkOrderEventsPublisher, useValue: events },
+        { provide: DataSource, useValue: dataSource },
+        { provide: WorkOrderEventsOutbox, useValue: outbox },
       ],
     }).compile();
 
     service = module.get(TriageService);
   });
 
-  it('stores the classification and publishes work-order.triaged', async () => {
+  it('stores the classification and stages work-order.triaged atomically', async () => {
     const order = workOrder();
     repository.findOneBy.mockResolvedValue(order);
 
     await service.apply(order.id, triage);
 
-    expect(repository.save).toHaveBeenCalledWith(
+    expect(manager.save).toHaveBeenCalledWith(
       expect.objectContaining({
         triageCategory: 'plumbing',
         triageUrgency: 'high',
@@ -57,7 +63,8 @@ describe('TriageService', () => {
         triagedAt: expect.any(Date) as Date,
       }),
     );
-    expect(events.publish).toHaveBeenCalledWith(
+    expect(outbox.stage).toHaveBeenCalledWith(
+      manager,
       WORK_ORDER_EVENTS.TRIAGED,
       expect.objectContaining({ id: order.id }),
     );
@@ -68,8 +75,8 @@ describe('TriageService', () => {
 
     await service.apply('missing-id', triage);
 
-    expect(repository.save).not.toHaveBeenCalled();
-    expect(events.publish).not.toHaveBeenCalled();
+    expect(manager.save).not.toHaveBeenCalled();
+    expect(outbox.stage).not.toHaveBeenCalled();
   });
 
   it('skips an already-triaged order (duplicate created event)', async () => {
@@ -79,7 +86,7 @@ describe('TriageService', () => {
 
     await service.apply(order.id, triage);
 
-    expect(repository.save).not.toHaveBeenCalled();
-    expect(events.publish).not.toHaveBeenCalled();
+    expect(manager.save).not.toHaveBeenCalled();
+    expect(outbox.stage).not.toHaveBeenCalled();
   });
 });

@@ -4,9 +4,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsWhere, Repository } from 'typeorm';
+import { DataSource, FindOptionsWhere, Repository } from 'typeorm';
 import { WORK_ORDER_EVENTS, WorkOrderEventType } from '@app/contracts';
-import { WorkOrderEventsPublisher } from '../messaging/work-order-events.publisher';
+import { WorkOrderEventsOutbox } from '../messaging/work-order-events.outbox';
 import { CreateWorkOrderDto } from './dto/create-work-order.dto';
 import { PaginatedResult } from './dto/paginated-result';
 import { QueryWorkOrdersDto } from './dto/query-work-orders.dto';
@@ -26,13 +26,29 @@ export class WorkOrdersService {
   constructor(
     @InjectRepository(WorkOrder)
     private readonly repository: Repository<WorkOrder>,
-    private readonly events: WorkOrderEventsPublisher,
+    private readonly dataSource: DataSource,
+    private readonly outbox: WorkOrderEventsOutbox,
   ) {}
 
-  async create(dto: CreateWorkOrderDto): Promise<WorkOrder> {
-    const workOrder = await this.repository.save(this.repository.create(dto));
-    await this.events.publish(WORK_ORDER_EVENTS.CREATED, workOrder);
-    return workOrder;
+  /**
+   * State change and its event commit atomically: the entity save and the
+   * outbox row share one transaction, so there is no window where the state
+   * changed but the event was lost (the dual-write problem, closed).
+   */
+  private saveAndStage(
+    workOrder: WorkOrder,
+    type: WorkOrderEventType,
+  ): Promise<WorkOrder> {
+    return this.dataSource.transaction(async (manager) => {
+      const saved = await manager.save(workOrder);
+      await this.outbox.stage(manager, type, saved);
+      return saved;
+    });
+  }
+
+  create(dto: CreateWorkOrderDto): Promise<WorkOrder> {
+    const workOrder = this.repository.create(dto);
+    return this.saveAndStage(workOrder, WORK_ORDER_EVENTS.CREATED);
   }
 
   async findAll(
@@ -74,9 +90,7 @@ export class WorkOrdersService {
 
     workOrder.assigneeId = assigneeId;
     workOrder.status = WorkOrderStatus.ASSIGNED;
-    const saved = await this.repository.save(workOrder);
-    await this.events.publish(WORK_ORDER_EVENTS.ASSIGNED, saved);
-    return saved;
+    return this.saveAndStage(workOrder, WORK_ORDER_EVENTS.ASSIGNED);
   }
 
   async updateStatus(id: string, next: WorkOrderStatus): Promise<WorkOrder> {
@@ -94,12 +108,11 @@ export class WorkOrdersService {
     }
 
     workOrder.status = next;
-    const saved = await this.repository.save(workOrder);
 
     const eventType = STATUS_EVENTS[next];
     if (eventType) {
-      await this.events.publish(eventType, saved);
+      return this.saveAndStage(workOrder, eventType);
     }
-    return saved;
+    return this.repository.save(workOrder);
   }
 }

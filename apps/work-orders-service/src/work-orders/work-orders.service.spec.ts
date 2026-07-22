@@ -1,9 +1,9 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 import { WORK_ORDER_EVENTS } from '@app/contracts';
-import { WorkOrderEventsPublisher } from '../messaging/work-order-events.publisher';
+import { WorkOrderEventsOutbox } from '../messaging/work-order-events.outbox';
 import { CreateWorkOrderDto } from './dto/create-work-order.dto';
 import { QueryWorkOrdersDto } from './dto/query-work-orders.dto';
 import { WorkOrder } from './work-order.entity';
@@ -18,21 +18,22 @@ describe('WorkOrdersService', () => {
       'create' | 'save' | 'findOneBy' | 'findAndCount'
     >
   >;
+  let manager: { save: jest.Mock };
+  let outbox: { stage: jest.Mock };
 
-  const workOrder = (overrides: Partial<WorkOrder> = {}): WorkOrder => ({
-    id: '5b4f2a54-0000-4000-8000-000000000001',
-    title: 'Leaking tap in kitchen',
-    description: 'Constant drip under the sink',
-    propertyId: '5b4f2a54-0000-4000-8000-000000000002',
-    priority: WorkOrderPriority.MEDIUM,
-    status: WorkOrderStatus.OPEN,
-    assigneeId: null,
-    createdAt: new Date('2026-07-21T10:00:00Z'),
-    updatedAt: new Date('2026-07-21T10:00:00Z'),
-    ...overrides,
-  });
-
-  let publisher: { publish: jest.Mock };
+  const workOrder = (overrides: Partial<WorkOrder> = {}): WorkOrder =>
+    ({
+      id: '5b4f2a54-0000-4000-8000-000000000001',
+      title: 'Leaking tap in kitchen',
+      description: 'Constant drip under the sink',
+      propertyId: '5b4f2a54-0000-4000-8000-000000000002',
+      priority: WorkOrderPriority.MEDIUM,
+      status: WorkOrderStatus.OPEN,
+      assigneeId: null,
+      createdAt: new Date('2026-07-21T10:00:00Z'),
+      updatedAt: new Date('2026-07-21T10:00:00Z'),
+      ...overrides,
+    }) as WorkOrder;
 
   beforeEach(async () => {
     repository = {
@@ -41,13 +42,24 @@ describe('WorkOrdersService', () => {
       findOneBy: jest.fn(),
       findAndCount: jest.fn(),
     };
-    publisher = { publish: jest.fn().mockResolvedValue(undefined) };
+    // The transaction mock hands the fake manager to the callback, so the
+    // specs can assert that save and stage happen inside the same scope.
+    manager = {
+      save: jest.fn().mockImplementation((wo: WorkOrder) => wo),
+    };
+    const dataSource = {
+      transaction: jest.fn((cb: (m: EntityManager) => unknown): unknown =>
+        cb(manager as unknown as EntityManager),
+      ),
+    };
+    outbox = { stage: jest.fn().mockResolvedValue(undefined) };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         WorkOrdersService,
         { provide: getRepositoryToken(WorkOrder), useValue: repository },
-        { provide: WorkOrderEventsPublisher, useValue: publisher },
+        { provide: DataSource, useValue: dataSource },
+        { provide: WorkOrderEventsOutbox, useValue: outbox },
       ],
     }).compile();
 
@@ -55,7 +67,7 @@ describe('WorkOrdersService', () => {
   });
 
   describe('create', () => {
-    it('persists a new work order from the dto', async () => {
+    it('persists a new work order and stages created in the same transaction', async () => {
       const dto: CreateWorkOrderDto = {
         title: 'Leaking tap in kitchen',
         description: 'Constant drip under the sink',
@@ -63,14 +75,14 @@ describe('WorkOrdersService', () => {
       };
       const entity = workOrder();
       repository.create.mockReturnValue(entity);
-      repository.save.mockResolvedValue(entity);
 
       const result = await service.create(dto);
 
       expect(repository.create).toHaveBeenCalledWith(dto);
-      expect(repository.save).toHaveBeenCalledWith(entity);
+      expect(manager.save).toHaveBeenCalledWith(entity);
       expect(result).toBe(entity);
-      expect(publisher.publish).toHaveBeenCalledWith(
+      expect(outbox.stage).toHaveBeenCalledWith(
+        manager,
         WORK_ORDER_EVENTS.CREATED,
         entity,
       );
@@ -133,15 +145,13 @@ describe('WorkOrdersService', () => {
     it('assigns an open work order and moves it to assigned', async () => {
       const entity = workOrder({ status: WorkOrderStatus.OPEN });
       repository.findOneBy.mockResolvedValue(entity);
-      repository.save.mockImplementation((wo) =>
-        Promise.resolve(wo as WorkOrder),
-      );
 
       const result = await service.assign(entity.id, assigneeId);
 
       expect(result.status).toBe(WorkOrderStatus.ASSIGNED);
       expect(result.assigneeId).toBe(assigneeId);
-      expect(publisher.publish).toHaveBeenCalledWith(
+      expect(outbox.stage).toHaveBeenCalledWith(
+        manager,
         WORK_ORDER_EVENTS.ASSIGNED,
         result,
       );
@@ -153,9 +163,6 @@ describe('WorkOrdersService', () => {
         assigneeId: 'previous-assignee',
       });
       repository.findOneBy.mockResolvedValue(entity);
-      repository.save.mockImplementation((wo) =>
-        Promise.resolve(wo as WorkOrder),
-      );
 
       const result = await service.assign(entity.id, assigneeId);
 
@@ -172,7 +179,8 @@ describe('WorkOrdersService', () => {
       await expect(service.assign('any-id', assigneeId)).rejects.toBeInstanceOf(
         ConflictException,
       );
-      expect(repository.save).not.toHaveBeenCalled();
+      expect(manager.save).not.toHaveBeenCalled();
+      expect(outbox.stage).not.toHaveBeenCalled();
     });
   });
 
@@ -183,9 +191,6 @@ describe('WorkOrdersService', () => {
       [WorkOrderStatus.IN_PROGRESS, WorkOrderStatus.COMPLETED],
     ])('allows the transition %s -> %s', async (from, to) => {
       repository.findOneBy.mockResolvedValue(workOrder({ status: from }));
-      repository.save.mockImplementation((wo) =>
-        Promise.resolve(wo as WorkOrder),
-      );
 
       const result = await service.updateStatus('any-id', to);
 
@@ -203,15 +208,15 @@ describe('WorkOrdersService', () => {
       await expect(service.updateStatus('any-id', to)).rejects.toBeInstanceOf(
         ConflictException,
       );
-      expect(repository.save).not.toHaveBeenCalled();
-      expect(publisher.publish).not.toHaveBeenCalled();
+      expect(manager.save).not.toHaveBeenCalled();
+      expect(outbox.stage).not.toHaveBeenCalled();
     });
 
     it.each([
       [WorkOrderStatus.IN_PROGRESS, WORK_ORDER_EVENTS.STARTED],
       [WorkOrderStatus.COMPLETED, WORK_ORDER_EVENTS.COMPLETED],
       [WorkOrderStatus.CANCELLED, WORK_ORDER_EVENTS.CANCELLED],
-    ])('publishes the matching event for %s', async (to, eventType) => {
+    ])('stages the matching event for %s', async (to, eventType) => {
       const from =
         to === WorkOrderStatus.CANCELLED
           ? WorkOrderStatus.OPEN
@@ -219,13 +224,11 @@ describe('WorkOrdersService', () => {
             ? WorkOrderStatus.ASSIGNED
             : WorkOrderStatus.IN_PROGRESS;
       repository.findOneBy.mockResolvedValue(workOrder({ status: from }));
-      repository.save.mockImplementation((wo) =>
-        Promise.resolve(wo as WorkOrder),
-      );
 
       await service.updateStatus('any-id', to);
 
-      expect(publisher.publish).toHaveBeenCalledWith(
+      expect(outbox.stage).toHaveBeenCalledWith(
+        manager,
         eventType,
         expect.objectContaining({ status: to }),
       );

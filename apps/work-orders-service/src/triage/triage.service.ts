@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { WORK_ORDER_EVENTS, WorkOrderTriage } from '@app/contracts';
-import { WorkOrderEventsPublisher } from '../messaging/work-order-events.publisher';
+import { WorkOrderEventsOutbox } from '../messaging/work-order-events.outbox';
 import { WorkOrder } from '../work-orders/work-order.entity';
 
 @Injectable()
@@ -12,7 +12,8 @@ export class TriageService {
   constructor(
     @InjectRepository(WorkOrder)
     private readonly repository: Repository<WorkOrder>,
-    private readonly events: WorkOrderEventsPublisher,
+    private readonly dataSource: DataSource,
+    private readonly outbox: WorkOrderEventsOutbox,
   ) {}
 
   async apply(workOrderId: string, triage: WorkOrderTriage): Promise<void> {
@@ -32,9 +33,14 @@ export class TriageService {
     workOrder.triageUrgency = triage.urgency;
     workOrder.triageReasoning = triage.reasoning;
     workOrder.triagedAt = new Date();
-    const saved = await this.repository.save(workOrder);
 
-    await this.events.publish(WORK_ORDER_EVENTS.TRIAGED, saved);
+    // Same atomic pair as the write path: triage columns and the triaged
+    // event commit together through the outbox.
+    await this.dataSource.transaction(async (manager) => {
+      const saved = await manager.save(workOrder);
+      await this.outbox.stage(manager, WORK_ORDER_EVENTS.TRIAGED, saved);
+    });
+
     this.logger.log(
       `work order ${workOrderId} triaged as ${triage.category}/${triage.urgency}`,
     );

@@ -1,8 +1,9 @@
 import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
 import { Module } from '@nestjs/common';
 import { EXCHANGES } from '@app/contracts';
+import { OutboxRelay } from './outbox-relay';
 import { WorkOrderAuditProducer } from './work-order-audit.producer';
-import { WorkOrderEventsPublisher } from './work-order-events.publisher';
+import { WorkOrderEventsOutbox } from './work-order-events.outbox';
 
 @Module({
   imports: [
@@ -12,7 +13,7 @@ import { WorkOrderEventsPublisher } from './work-order-events.publisher';
       exchanges: [{ name: EXCHANGES.EVENTS, type: 'topic' }],
     }),
   ],
-  providers: [WorkOrderEventsPublisher, WorkOrderAuditProducer],
-  exports: [WorkOrderEventsPublisher],
+  providers: [WorkOrderEventsOutbox, OutboxRelay, WorkOrderAuditProducer],
+  exports: [WorkOrderEventsOutbox],
 })
 export class MessagingModule {}

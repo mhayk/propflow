@@ -10,8 +10,8 @@ import { TOPICS, WorkOrderEvent } from '@app/contracts';
 /**
  * Appends every domain event to the Kafka audit stream, keyed by the
  * aggregate id: all events of one work order share a partition and so keep
- * their order. Best-effort like the RabbitMQ publisher: audit must never
- * take the write path down.
+ * their order. Called from the outbox relay, never the write path — a failure
+ * here throws so the relay leaves the row unpublished and retries.
  */
 @Injectable()
 export class WorkOrderAuditProducer implements OnModuleInit, OnModuleDestroy {
@@ -42,18 +42,9 @@ export class WorkOrderAuditProducer implements OnModuleInit, OnModuleDestroy {
   }
 
   async record(event: WorkOrderEvent): Promise<void> {
-    try {
-      await this.producer.send({
-        topic: TOPICS.WORK_ORDER_EVENTS,
-        messages: [
-          { key: event.data.workOrderId, value: JSON.stringify(event) },
-        ],
-      });
-    } catch (error) {
-      this.logger.error(
-        `failed to append ${event.type} (${event.eventId}) to the audit stream`,
-        error instanceof Error ? error.stack : String(error),
-      );
-    }
+    await this.producer.send({
+      topic: TOPICS.WORK_ORDER_EVENTS,
+      messages: [{ key: event.data.workOrderId, value: JSON.stringify(event) }],
+    });
   }
 }
