@@ -4,8 +4,11 @@ import {
   HealthCheckResult,
   HealthCheckService,
 } from '@nestjs/terminus';
+import { Public } from '../auth/auth.decorators';
 import { DownstreamHealthIndicator } from './downstream.health';
 
+// Probes are called by the platform, not by users — no token to present.
+@Public()
 @Controller('health')
 export class HealthController {
   constructor(

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 import { buildLoggerOptions, MetricsModule } from '@app/observability';
+import { AuthModule } from './auth/auth.module';
 import { HealthModule } from './health/health.module';
 import { GatewayModule } from './gateway/gateway.module';
 
@@ -10,6 +11,7 @@ import { GatewayModule } from './gateway/gateway.module';
     ConfigModule.forRoot({ isGlobal: true }),
     LoggerModule.forRoot(buildLoggerOptions('api-gateway')),
     MetricsModule.forRoot('api-gateway'),
+    AuthModule,
     HealthModule,
     GatewayModule,
   ],

@@ -7,6 +7,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { Roles } from '../../auth/auth.decorators';
 import { PropertiesClient } from '../clients/properties.client';
 import { Paginated, PropertyDto } from '../http/api-types';
 
@@ -14,6 +15,7 @@ import { Paginated, PropertyDto } from '../http/api-types';
 export class PropertiesController {
   constructor(private readonly properties: PropertiesClient) {}
 
+  @Roles('manager')
   @Post()
   create(@Body() body: unknown): Promise<PropertyDto> {
     return this.properties.create(body);

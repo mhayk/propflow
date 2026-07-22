@@ -8,18 +8,20 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { Roles } from '../../auth/auth.decorators';
 import { WorkOrdersClient } from '../clients/work-orders.client';
 import { Paginated, WorkOrderDto } from '../http/api-types';
 
 /**
- * Pass-through routes. The gateway validates only what it owns (path shape);
- * payload validation lives with the service that owns the data - duplicating
- * it here would make every rule change a two-repo deployment.
+ * Pass-through routes. The gateway validates only what it owns (path shape,
+ * and now authorization — roles map to the actors in docs/flows.md); payload
+ * validation lives with the service that owns the data.
  */
 @Controller('work-orders')
 export class WorkOrdersController {
   constructor(private readonly workOrders: WorkOrdersClient) {}
 
+  @Roles('tenant', 'manager')
   @Post()
   create(@Body() body: unknown): Promise<WorkOrderDto> {
     return this.workOrders.create(body);
@@ -37,6 +39,7 @@ export class WorkOrdersController {
     return this.workOrders.getById(id);
   }
 
+  @Roles('manager')
   @Patch(':id/assign')
   assign(
     @Param('id', ParseUUIDPipe) id: string,
@@ -45,6 +48,7 @@ export class WorkOrdersController {
     return this.workOrders.assign(id, body);
   }
 
+  @Roles('technician', 'manager')
   @Patch(':id/status')
   updateStatus(
     @Param('id', ParseUUIDPipe) id: string,

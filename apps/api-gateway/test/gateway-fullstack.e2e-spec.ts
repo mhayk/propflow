@@ -34,6 +34,7 @@ describe('Gateway full-stack (e2e)', () => {
   let workOrdersApp: INestApplication;
   let propertiesApp: INestApplication;
   let gateway: INestApplication<App>;
+  let managerToken: string;
 
   beforeAll(async () => {
     workOrdersApp = await bootDownstream(
@@ -57,6 +58,13 @@ describe('Gateway full-stack (e2e)', () => {
     gateway = fixture.createNestApplication();
     configureGateway(gateway);
     await gateway.init();
+
+    // Every route below the fold requires auth; the manager role can do it all.
+    const loginResponse = await request(gateway.getHttpServer())
+      .post('/api/auth/login')
+      .send({ email: 'manager@propflow.dev', password: 'propflow' })
+      .expect(200);
+    managerToken = (loginResponse.body as { accessToken: string }).accessToken;
   }, 60_000);
 
   afterAll(async () => {
@@ -71,6 +79,7 @@ describe('Gateway full-stack (e2e)', () => {
   it('creates a property through the gateway', async () => {
     const response = await request(gateway.getHttpServer())
       .post('/api/properties')
+      .set('Authorization', `Bearer ${managerToken}`)
       .send({
         name: 'Riverside House',
         addressLine1: '12 Thames Road',
@@ -86,6 +95,7 @@ describe('Gateway full-stack (e2e)', () => {
   it('creates a work order through the gateway', async () => {
     const response = await request(gateway.getHttpServer())
       .post('/api/work-orders')
+      .set('Authorization', `Bearer ${managerToken}`)
       .send({
         title: 'Broken boiler',
         description: 'No hot water since Monday',
@@ -95,11 +105,23 @@ describe('Gateway full-stack (e2e)', () => {
       .expect(201);
 
     workOrderId = (response.body as { id: string }).id;
+
+    // Identity survived the whole chain: JWT at the gateway -> x-user-id
+    // header -> ALS context -> event envelope staged in the outbox.
+    const rows: { actor: string }[] = (await workOrdersApp
+      .get(DataSource)
+      .query(
+        `SELECT payload->>'actorId' AS actor FROM outbox_events
+         WHERE payload->'data'->>'workOrderId' = $1`,
+        [workOrderId],
+      )) as { actor: string }[];
+    expect(rows[0]?.actor).toBe('manager@propflow.dev');
   });
 
   it('passes downstream validation errors through untouched', async () => {
     const response = await request(gateway.getHttpServer())
       .post('/api/work-orders')
+      .set('Authorization', `Bearer ${managerToken}`)
       .send({ title: 'x' })
       .expect(400);
 
@@ -111,6 +133,7 @@ describe('Gateway full-stack (e2e)', () => {
   it('passes a domain conflict (409) through untouched', async () => {
     await request(gateway.getHttpServer())
       .patch(`/api/work-orders/${workOrderId}/status`)
+      .set('Authorization', `Bearer ${managerToken}`)
       .send({ status: 'completed' })
       .expect(409);
   });
@@ -132,6 +155,7 @@ describe('Gateway full-stack (e2e)', () => {
   it('composes the property summary from both services', async () => {
     const response = await request(gateway.getHttpServer())
       .get(`/api/properties/${propertyId}/summary`)
+      .set('Authorization', `Bearer ${managerToken}`)
       .expect(200);
 
     const body = response.body as {
@@ -149,6 +173,7 @@ describe('Gateway full-stack (e2e)', () => {
 
     const response = await request(gateway.getHttpServer())
       .get(`/api/properties/${propertyId}/summary`)
+      .set('Authorization', `Bearer ${managerToken}`)
       .expect(200);
 
     const body = response.body as {

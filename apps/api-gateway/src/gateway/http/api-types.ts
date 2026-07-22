@@ -36,6 +36,7 @@ export interface ActivityEventDto {
   workOrderId: string;
   propertyId: string;
   correlationId: string | null;
+  actorId: string | null;
   occurredAt: string;
   payload: Record<string, unknown>;
 }

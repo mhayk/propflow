@@ -14,3 +14,4 @@ process.env.PROPERTIES_DB_NAME ??= 'properties_test';
 process.env.RABBITMQ_URL ??= 'amqp://propflow:propflow@localhost:5672';
 process.env.KAFKA_BROKERS ??= 'localhost:9092';
 process.env.KAFKAJS_NO_PARTITIONER_WARNING = '1';
+process.env.JWT_SECRET ??= 'e2e-test-secret';

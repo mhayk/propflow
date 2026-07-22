@@ -3,7 +3,12 @@ import {
   GatewayTimeoutException,
   HttpException,
 } from '@nestjs/common';
-import { currentRequestId, REQUEST_ID_HEADER } from '@app/observability';
+import {
+  currentRequestId,
+  currentUserId,
+  REQUEST_ID_HEADER,
+  USER_ID_HEADER,
+} from '@app/observability';
 
 export const REQUEST_TIMEOUT_MS = 3_000;
 
@@ -42,6 +47,10 @@ export class DownstreamClient {
 
   private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const requestId = currentRequestId();
+    // Identity crosses the sync boundary the same way the correlation id
+    // does; services trust the header because only the gateway can reach
+    // them (k8s NetworkPolicy).
+    const userId = currentUserId();
     let response: Response;
     try {
       response = await fetch(`${this.baseUrl}${path}`, {
@@ -51,6 +60,7 @@ export class DownstreamClient {
           // Propagate the caller's correlation id so one user action is
           // traceable across every service it touches.
           ...(requestId ? { [REQUEST_ID_HEADER]: requestId } : {}),
+          ...(userId ? { [USER_ID_HEADER]: userId } : {}),
         },
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });

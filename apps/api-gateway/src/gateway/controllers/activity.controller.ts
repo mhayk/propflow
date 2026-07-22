@@ -1,4 +1,5 @@
 import { Controller, Get, Query } from '@nestjs/common';
+import { Roles } from '../../auth/auth.decorators';
 import { ActivityClient } from '../clients/activity.client';
 import { ActivityEventDto, CursorPage } from '../http/api-types';
 
@@ -11,6 +12,7 @@ import { ActivityEventDto, CursorPage } from '../http/api-types';
 export class ActivityController {
   constructor(private readonly activity: ActivityClient) {}
 
+  @Roles('manager')
   @Get()
   list(
     @Query() query: Record<string, string>,
