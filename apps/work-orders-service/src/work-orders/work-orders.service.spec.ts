@@ -8,6 +8,7 @@ import { CreateWorkOrderDto } from './dto/create-work-order.dto';
 import { QueryWorkOrdersDto } from './dto/query-work-orders.dto';
 import { WorkOrder } from './work-order.entity';
 import { WorkOrderPriority, WorkOrderStatus } from './work-order.enums';
+import * as transitions from './work-order-transitions';
 import { WorkOrdersService } from './work-orders.service';
 
 describe('WorkOrdersService', () => {
@@ -118,6 +119,23 @@ describe('WorkOrdersService', () => {
 
       expect(repository.findAndCount).toHaveBeenCalledWith(
         expect.objectContaining({ where: { status: WorkOrderStatus.OPEN } }),
+      );
+    });
+
+    it('combines the priority and property filters when provided', async () => {
+      repository.findAndCount.mockResolvedValue([[], 0]);
+      const propertyId = '5b4f2a54-0000-4000-8000-000000000002';
+      const query = Object.assign(new QueryWorkOrdersDto(), {
+        priority: WorkOrderPriority.URGENT,
+        propertyId,
+      });
+
+      await service.findAll(query);
+
+      expect(repository.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { priority: WorkOrderPriority.URGENT, propertyId },
+        }),
       );
     });
   });
@@ -242,6 +260,72 @@ describe('WorkOrdersService', () => {
       await expect(
         service.updateStatus('any-id', WorkOrderStatus.ASSIGNED),
       ).rejects.toBeInstanceOf(ConflictException);
+    });
+
+    it('saves without staging an event for a transition outside the event map', async () => {
+      // Every currently allowed transition maps to an event; the fallback save
+      // path is defensive. Widen the transition table for this test only.
+      const canTransitionSpy = jest
+        .spyOn(transitions, 'canTransition')
+        .mockReturnValue(true);
+      const entity = workOrder({ status: WorkOrderStatus.CANCELLED });
+      repository.findOneBy.mockResolvedValue(entity);
+      repository.save.mockResolvedValue(entity);
+
+      const result = await service.updateStatus('any-id', WorkOrderStatus.OPEN);
+
+      expect(result.status).toBe(WorkOrderStatus.OPEN);
+      expect(repository.save).toHaveBeenCalledWith(entity);
+      expect(manager.save).not.toHaveBeenCalled();
+      expect(outbox.stage).not.toHaveBeenCalled();
+      canTransitionSpy.mockRestore();
+    });
+  });
+
+  describe('decorator metadata (ts-jest emit)', () => {
+    it('falls back to Object param types when dependencies are not loadable', () => {
+      jest.isolateModules(() => {
+        jest.doMock('typeorm', () => ({}));
+        jest.doMock('@nestjs/typeorm', () => ({
+          InjectRepository: () => () => undefined,
+        }));
+        jest.doMock('@nestjs/common', () => ({
+          Injectable: () => () => undefined,
+          ConflictException: class {},
+          NotFoundException: class {},
+        }));
+        jest.doMock('@app/contracts', () => ({
+          WORK_ORDER_EVENTS: {
+            STARTED: 'work-order.started',
+            COMPLETED: 'work-order.completed',
+            CANCELLED: 'work-order.cancelled',
+          },
+        }));
+        jest.doMock('../messaging/work-order-events.outbox', () => ({}));
+        jest.doMock('./work-order.entity', () => ({}));
+        jest.doMock('./dto/create-work-order.dto', () => ({}));
+        jest.doMock('./dto/paginated-result', () => ({}));
+        jest.doMock('./dto/query-work-orders.dto', () => ({}));
+
+        const mod = jest.requireActual<typeof import('./work-orders.service')>(
+          './work-orders.service',
+        );
+        const paramTypes: unknown = Reflect.getMetadata(
+          'design:paramtypes',
+          mod.WorkOrdersService,
+        );
+
+        expect(paramTypes).toEqual([Object, Object, Object]);
+      });
+      jest.dontMock('typeorm');
+      jest.dontMock('@nestjs/typeorm');
+      jest.dontMock('@nestjs/common');
+      jest.dontMock('@app/contracts');
+      jest.dontMock('../messaging/work-order-events.outbox');
+      jest.dontMock('./work-order.entity');
+      jest.dontMock('./dto/create-work-order.dto');
+      jest.dontMock('./dto/paginated-result');
+      jest.dontMock('./dto/query-work-orders.dto');
     });
   });
 });

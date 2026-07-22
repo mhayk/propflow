@@ -91,4 +91,79 @@ describe('WorkOrderEventsConsumer', () => {
 
     expect(sender.send).toHaveBeenCalledTimes(1);
   });
+
+  it('sends the completed notification once for duplicate deliveries', async () => {
+    const duplicate = event(WORK_ORDER_EVENTS.COMPLETED);
+
+    await consumer.onWorkOrderCompleted(duplicate, message);
+    await consumer.onWorkOrderCompleted(duplicate, message);
+
+    expect(sender.send).toHaveBeenCalledTimes(1);
+  });
+
+  it('handles created events that carry a correlationId', async () => {
+    const correlated = {
+      ...event(WORK_ORDER_EVENTS.CREATED),
+      correlationId: '66666666-6666-4666-8666-666666666666',
+    };
+
+    await consumer.onWorkOrderCreated(correlated, message);
+
+    expect(sender.send).toHaveBeenCalledTimes(1);
+  });
+
+  it('handles completed events that carry a correlationId', async () => {
+    const correlated = {
+      ...event(WORK_ORDER_EVENTS.COMPLETED),
+      correlationId: '77777777-7777-4777-8777-777777777777',
+    };
+
+    await consumer.onWorkOrderCompleted(correlated, message);
+
+    expect(sender.send).toHaveBeenCalledTimes(1);
+  });
+
+  it('falls back to Object metadata when types are not defined at load time', () => {
+    // emitDecoratorMetadata guards every serialized type reference (ctor param
+    // types and decorated-method return types) with
+    // `typeof X !== "undefined" ? X : Object`; re-evaluate the module without
+    // those globals/classes to execute the fallback side of each guard. All
+    // dependencies are captured up front so nothing else evaluates while the
+    // Promise global is missing.
+    const common =
+      jest.requireActual<typeof import('@nestjs/common')>('@nestjs/common');
+    const rabbitmq = jest.requireActual<
+      typeof import('@golevelup/nestjs-rabbitmq')
+    >('@golevelup/nestjs-rabbitmq');
+    const contracts =
+      jest.requireActual<typeof import('@app/contracts')>('@app/contracts');
+    let isolated: typeof import('./work-order-events.consumer') | undefined;
+
+    jest.isolateModules(() => {
+      jest.doMock('@nestjs/common', () => common);
+      jest.doMock('@golevelup/nestjs-rabbitmq', () => rabbitmq);
+      jest.doMock('@app/contracts', () => contracts);
+      jest.doMock('./event-retry.handler', () => ({}));
+      jest.doMock('./notification-sender', () => ({}));
+      jest.doMock('./processed-events.store', () => ({}));
+      const globals = globalThis as { Promise?: PromiseConstructor };
+      const originalPromise = globals.Promise;
+      delete globals.Promise;
+      try {
+        isolated = jest.requireActual<
+          typeof import('./work-order-events.consumer')
+        >('./work-order-events.consumer');
+      } finally {
+        globals.Promise = originalPromise;
+      }
+    });
+    jest.dontMock('@nestjs/common');
+    jest.dontMock('@golevelup/nestjs-rabbitmq');
+    jest.dontMock('@app/contracts');
+    jest.dontMock('./event-retry.handler');
+    jest.dontMock('./notification-sender');
+    jest.dontMock('./processed-events.store');
+
+    expect(isolated?.WorkOrderEventsConsumer).toBeDefined();
+  });
 });

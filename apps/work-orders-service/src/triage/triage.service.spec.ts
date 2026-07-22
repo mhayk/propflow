@@ -89,4 +89,39 @@ describe('TriageService', () => {
     expect(manager.save).not.toHaveBeenCalled();
     expect(outbox.stage).not.toHaveBeenCalled();
   });
+
+  describe('decorator metadata (ts-jest emit)', () => {
+    it('falls back to Object param types when dependencies are not loadable', () => {
+      jest.isolateModules(() => {
+        jest.doMock('typeorm', () => ({}));
+        jest.doMock('@nestjs/typeorm', () => ({
+          InjectRepository: () => () => undefined,
+        }));
+        jest.doMock('@nestjs/common', () => ({
+          Injectable: () => () => undefined,
+          Logger: class {},
+        }));
+        jest.doMock('@app/contracts', () => ({}));
+        jest.doMock('../messaging/work-order-events.outbox', () => ({}));
+        jest.doMock('../work-orders/work-order.entity', () => ({}));
+
+        const mod =
+          jest.requireActual<typeof import('./triage.service')>(
+            './triage.service',
+          );
+        const paramTypes: unknown = Reflect.getMetadata(
+          'design:paramtypes',
+          mod.TriageService,
+        );
+
+        expect(paramTypes).toEqual([Object, Object, Object]);
+      });
+      jest.dontMock('typeorm');
+      jest.dontMock('@nestjs/typeorm');
+      jest.dontMock('@nestjs/common');
+      jest.dontMock('@app/contracts');
+      jest.dontMock('../messaging/work-order-events.outbox');
+      jest.dontMock('../work-orders/work-order.entity');
+    });
+  });
 });

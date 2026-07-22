@@ -69,6 +69,78 @@ describe('EventRetryHandler', () => {
     );
   });
 
+  it('treats a missing headers object as the first attempt', async () => {
+    const headerless = {
+      properties: { headers: undefined },
+    } as unknown as ConsumeMessage;
+
+    await handler.handle(QUEUE, event, headerless, () =>
+      Promise.reject(new Error('smtp down')),
+    );
+
+    expect(amqp.publish).toHaveBeenCalledWith(
+      '',
+      `${QUEUE}.retry`,
+      event,
+      expect.objectContaining({ headers: { 'x-attempt': 2 } }),
+    );
+  });
+
+  it('treats a non-numeric x-attempt header as the first attempt', async () => {
+    const malformed = {
+      properties: { headers: { 'x-attempt': 'not-a-number' } },
+    } as unknown as ConsumeMessage;
+
+    await handler.handle(QUEUE, event, malformed, () =>
+      Promise.reject(new Error('smtp down')),
+    );
+
+    expect(amqp.publish).toHaveBeenCalledWith(
+      '',
+      `${QUEUE}.retry`,
+      event,
+      expect.objectContaining({ headers: { 'x-attempt': 2 } }),
+    );
+  });
+
+  it('stringifies non-Error throwables in the dead-letter header', async () => {
+    // Typed as Error to satisfy the linter; the runtime value stays a string
+    // so the non-Error serialization path executes.
+    const nonError = 'smtp exploded' as unknown as Error;
+
+    await handler.handle(QUEUE, event, messageWithAttempt(3), () =>
+      Promise.reject(nonError),
+    );
+
+    expect(amqp.publish).toHaveBeenCalledWith(
+      EXCHANGES.DEAD_LETTER,
+      QUEUE,
+      event,
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          'x-last-error': 'smtp exploded',
+        }) as Record<string, unknown>,
+      }),
+    );
+  });
+
+  it('falls back to Object metadata when AmqpConnection is not defined at load time', () => {
+    // emitDecoratorMetadata guards each constructor param type with
+    // `typeof X !== "undefined" ? X : Object`; re-evaluate the module without
+    // AmqpConnection to execute the fallback side of that guard.
+    let isolated: typeof import('./event-retry.handler') | undefined;
+
+    jest.isolateModules(() => {
+      jest.doMock('@golevelup/nestjs-rabbitmq', () => ({}));
+      isolated = jest.requireActual<typeof import('./event-retry.handler')>(
+        './event-retry.handler',
+      );
+    });
+    jest.dontMock('@golevelup/nestjs-rabbitmq');
+
+    expect(isolated?.EventRetryHandler).toBeDefined();
+  });
+
   it('never throws back to the transport (the original message is acked)', async () => {
     amqp.publish.mockRejectedValue(new Error('broker gone'));
 

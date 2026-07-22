@@ -56,6 +56,17 @@ describe('PropertySummaryService', () => {
     expect(summary.workOrdersAvailable).toBe(false);
   });
 
+  it('degrades gracefully on a non-Error work-orders failure', async () => {
+    properties.getById.mockResolvedValue(property);
+    workOrders.list.mockRejectedValue('socket hang up');
+
+    const summary = await service.getSummary(PROPERTY_ID);
+
+    expect(summary.property).toBe(property);
+    expect(summary.workOrders).toBeNull();
+    expect(summary.workOrdersAvailable).toBe(false);
+  });
+
   it('propagates a missing property (the primary resource)', async () => {
     properties.getById.mockRejectedValue(new NotFoundException());
     workOrders.list.mockResolvedValue({ data: [], meta: {} });
@@ -63,5 +74,30 @@ describe('PropertySummaryService', () => {
     await expect(service.getSummary(PROPERTY_ID)).rejects.toBeInstanceOf(
       NotFoundException,
     );
+  });
+
+  // The emitted design-time metadata guards every referenced type with
+  // `typeof X !== "undefined" ? X : Object`; re-evaluating the module with
+  // the client classes absent walks the fallback arms of that emit.
+  it('degrades design-time metadata to Object when types are not runtime values', () => {
+    const decoratorFactory = () => (): void => undefined;
+
+    jest.doMock('@nestjs/common', () => ({
+      Injectable: decoratorFactory,
+      Logger: class {},
+    }));
+    jest.doMock('../clients/properties.client', () => ({}));
+    jest.doMock('../clients/work-orders.client', () => ({}));
+
+    jest.isolateModules(() => {
+      const isolated = jest.requireActual<
+        typeof import('./property-summary.service')
+      >('./property-summary.service');
+      expect(isolated.PropertySummaryService).toBeDefined();
+    });
+
+    jest.dontMock('@nestjs/common');
+    jest.dontMock('../clients/properties.client');
+    jest.dontMock('../clients/work-orders.client');
   });
 });

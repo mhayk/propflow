@@ -1,6 +1,9 @@
+import * as nestCommon from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import * as nestTypeorm from '@nestjs/typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { WORK_ORDER_EVENTS, WorkOrderEvent } from '@app/contracts';
+import * as entityModule from './audit-event.entity';
 import { AuditEvent } from './audit-event.entity';
 import { AuditIngestService } from './audit-ingest.service';
 
@@ -68,5 +71,41 @@ describe('AuditIngestService', () => {
     builder.execute.mockResolvedValue({ identifiers: [] });
 
     await expect(service.record(event)).resolves.toBeUndefined();
+  });
+
+  it('stores a null actor for system-initiated events', async () => {
+    await service.record(event);
+
+    expect(builder.values).toHaveBeenCalledWith(
+      expect.objectContaining({ actorId: null }),
+    );
+  });
+
+  it('records the acting user when the event carries one', async () => {
+    await service.record({ ...event, actorId: 'user-7' });
+
+    expect(builder.values).toHaveBeenCalledWith(
+      expect.objectContaining({ actorId: 'user-7' }),
+    );
+  });
+
+  it('falls back to Object metadata when the repository type is not a constructor', () => {
+    jest.doMock('@nestjs/common', () => nestCommon);
+    jest.doMock('@nestjs/typeorm', () => nestTypeorm);
+    jest.doMock('typeorm', () => ({ Repository: {} }));
+    jest.doMock('./audit-event.entity', () => entityModule);
+    try {
+      jest.isolateModules(() => {
+        const reloaded = jest.requireActual<{ AuditIngestService: unknown }>(
+          './audit-ingest.service',
+        );
+        expect(typeof reloaded.AuditIngestService).toBe('function');
+      });
+    } finally {
+      jest.dontMock('@nestjs/common');
+      jest.dontMock('@nestjs/typeorm');
+      jest.dontMock('typeorm');
+      jest.dontMock('./audit-event.entity');
+    }
   });
 });

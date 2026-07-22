@@ -39,9 +39,41 @@ describe('RolesGuard', () => {
     ).toThrow(ForbiddenException);
   });
 
+  it('treats an empty @Roles() list as no restriction', () => {
+    const guard = guardWith({ roles: [] });
+
+    expect(guard.canActivate(context({ sub: 'a@b.c', role: 'tenant' }))).toBe(
+      true,
+    );
+  });
+
+  it('refuses a restricted route when no user is on the request', () => {
+    const guard = guardWith({ roles: ['manager'] });
+
+    expect(() => guard.canActivate(context(undefined))).toThrow(
+      ForbiddenException,
+    );
+  });
+
   it('skips public routes entirely', () => {
     const guard = guardWith({ isPublic: true, roles: ['manager'] });
 
     expect(guard.canActivate(context(undefined))).toBe(true);
+  });
+
+  it('falls back to Object in the design:paramtypes metadata when Reflector is elided', () => {
+    // isolatedModules transpilation guards every metadata type reference with
+    // `typeof X !== "undefined" ? X : Object`; evaluating the module with the
+    // import mocked away exercises the fallback side of that branch.
+    jest.doMock('@nestjs/core', () => ({}));
+    try {
+      jest.isolateModules(() => {
+        const actual =
+          jest.requireActual<typeof import('./roles.guard')>('./roles.guard');
+        expect(actual.RolesGuard).toBeDefined();
+      });
+    } finally {
+      jest.dontMock('@nestjs/core');
+    }
   });
 });

@@ -82,4 +82,70 @@ describe('WorkOrderEventsOutbox', () => {
     ];
     expect(staged.payload.actorId).toBeNull();
   });
+
+  const stagedTriage = (): unknown => {
+    const [, staged] = manager.insert.mock.calls[0] as [
+      unknown,
+      { payload: { data: { triage: unknown } } },
+    ];
+    return staged.payload.data.triage;
+  };
+
+  it('embeds the triage block once category and urgency are present', async () => {
+    const triaged = {
+      ...workOrder,
+      triageCategory: 'plumbing',
+      triageUrgency: 'high',
+      triageReasoning: 'Active leak causing water damage.',
+    } as WorkOrder;
+
+    await outbox.stage(
+      manager as unknown as EntityManager,
+      WORK_ORDER_EVENTS.TRIAGED,
+      triaged,
+    );
+
+    expect(stagedTriage()).toEqual({
+      category: 'plumbing',
+      urgency: 'high',
+      reasoning: 'Active leak causing water damage.',
+    });
+  });
+
+  it('defaults the triage reasoning to an empty string when it is null', async () => {
+    const triaged = {
+      ...workOrder,
+      triageCategory: 'plumbing',
+      triageUrgency: 'high',
+      triageReasoning: null,
+    } as WorkOrder;
+
+    await outbox.stage(
+      manager as unknown as EntityManager,
+      WORK_ORDER_EVENTS.TRIAGED,
+      triaged,
+    );
+
+    expect(stagedTriage()).toEqual({
+      category: 'plumbing',
+      urgency: 'high',
+      reasoning: '',
+    });
+  });
+
+  it('keeps triage null while only one of category/urgency is set', async () => {
+    const halfTriaged = {
+      ...workOrder,
+      triageCategory: 'plumbing',
+      triageUrgency: null,
+    } as WorkOrder;
+
+    await outbox.stage(
+      manager as unknown as EntityManager,
+      WORK_ORDER_EVENTS.CREATED,
+      halfTriaged,
+    );
+
+    expect(stagedTriage()).toBeNull();
+  });
 });

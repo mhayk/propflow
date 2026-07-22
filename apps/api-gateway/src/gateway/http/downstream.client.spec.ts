@@ -18,6 +18,10 @@ class TestClient extends DownstreamClient {
   createThing(body: unknown): Promise<{ id: string }> {
     return this.post('/thing', body);
   }
+
+  patchThing(body: unknown): Promise<{ id: string }> {
+    return this.patch('/thing', body);
+  }
 }
 
 describe('DownstreamClient', () => {
@@ -61,6 +65,33 @@ describe('DownstreamClient', () => {
     });
   });
 
+  it('sends updates through the patch helper', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { id: 'thing-1' }));
+
+    await expect(client.patchThing({ status: 'completed' })).resolves.toEqual({
+      id: 'thing-1',
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://downstream:1234/thing',
+      expect.objectContaining({
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'completed' }),
+      }),
+    );
+  });
+
+  it('resolves undefined for a 204 without reading a body', async () => {
+    const json = jest.fn();
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 204,
+      json,
+    });
+
+    await expect(client.fetchThing()).resolves.toBeUndefined();
+    expect(json).not.toHaveBeenCalled();
+  });
+
   it('maps a timeout to 504 Gateway Timeout', async () => {
     fetchMock.mockRejectedValue(new DOMException('timed out', 'TimeoutError'));
 
@@ -71,6 +102,14 @@ describe('DownstreamClient', () => {
 
   it('maps an unreachable service to 502 Bad Gateway', async () => {
     fetchMock.mockRejectedValue(new TypeError('fetch failed'));
+
+    await expect(client.fetchThing()).rejects.toBeInstanceOf(
+      BadGatewayException,
+    );
+  });
+
+  it('maps a non-timeout DOMException to 502 Bad Gateway', async () => {
+    fetchMock.mockRejectedValue(new DOMException('aborted', 'AbortError'));
 
     await expect(client.fetchThing()).rejects.toBeInstanceOf(
       BadGatewayException,
@@ -89,6 +128,24 @@ describe('DownstreamClient', () => {
       expect.objectContaining({
         headers: expect.objectContaining({
           'x-request-id': 'req-777',
+        }) as Record<string, string>,
+      }),
+    );
+  });
+
+  it('forwards the ambient user id to the downstream service', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { ok: true }));
+
+    await runWithRequestContext(
+      { requestId: 'req-777', userId: 'user-9' },
+      () => client.fetchThing(),
+    );
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          'x-user-id': 'user-9',
         }) as Record<string, string>,
       }),
     );

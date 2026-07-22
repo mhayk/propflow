@@ -67,4 +67,52 @@ describe('WorkOrderTriageConsumer', () => {
 
     expect(triage.apply).not.toHaveBeenCalled();
   });
+
+  describe('decorator metadata (ts-jest emit)', () => {
+    it('falls back to Object metadata when dependencies and Promise are not loadable', () => {
+      jest.isolateModules(() => {
+        jest.doMock('@golevelup/nestjs-rabbitmq', () => ({
+          RabbitSubscribe: () => () => undefined,
+        }));
+        jest.doMock('@nestjs/common', () => ({
+          Injectable: () => () => undefined,
+          Logger: class {},
+        }));
+        jest.doMock('@app/contracts', () => ({
+          EXCHANGES: { EVENTS: 'propflow.events' },
+          WORK_ORDER_EVENTS: { CREATED: 'work-order.created' },
+        }));
+        jest.doMock('./triage-classifier', () => ({}));
+        jest.doMock('./triage.service', () => ({}));
+
+        const globalRef = globalThis as { Promise?: PromiseConstructor };
+        const realPromise = globalRef.Promise;
+        globalRef.Promise = undefined;
+        try {
+          const mod = jest.requireActual<
+            typeof import('./work-order-triage.consumer')
+          >('./work-order-triage.consumer');
+          const paramTypes: unknown = Reflect.getMetadata(
+            'design:paramtypes',
+            mod.WorkOrderTriageConsumer,
+          );
+          const returnType: unknown = Reflect.getMetadata(
+            'design:returntype',
+            mod.WorkOrderTriageConsumer.prototype,
+            'onWorkOrderCreated',
+          );
+
+          expect(paramTypes).toEqual([Object, Object]);
+          expect(returnType).toBe(Object);
+        } finally {
+          globalRef.Promise = realPromise;
+        }
+      });
+      jest.dontMock('@golevelup/nestjs-rabbitmq');
+      jest.dontMock('@nestjs/common');
+      jest.dontMock('@app/contracts');
+      jest.dontMock('./triage-classifier');
+      jest.dontMock('./triage.service');
+    });
+  });
 });

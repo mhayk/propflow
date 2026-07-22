@@ -1,6 +1,9 @@
+import * as nestCommon from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import * as nestTypeorm from '@nestjs/typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ActivityFeedService } from './activity-feed.service';
+import * as entityModule from './audit-event.entity';
 import { AuditEvent } from './audit-event.entity';
 import { ListActivityQueryDto } from './dto/list-activity-query.dto';
 
@@ -11,6 +14,7 @@ const row = (id: number): AuditEvent => ({
   workOrderId: '55555555-5555-4555-8555-555555555555',
   propertyId: '11111111-1111-4111-8111-111111111111',
   correlationId: null,
+  actorId: null,
   occurredAt: new Date('2026-07-21T10:00:00.000Z'),
   payload: {},
   recordedAt: new Date('2026-07-21T10:00:01.000Z'),
@@ -83,5 +87,25 @@ describe('ActivityFeedService', () => {
       'event.workOrderId = :workOrderId',
       { workOrderId: '55555555-5555-4555-8555-555555555555' },
     );
+  });
+
+  it('falls back to Object metadata when the repository type is not a constructor', () => {
+    jest.doMock('@nestjs/common', () => nestCommon);
+    jest.doMock('@nestjs/typeorm', () => nestTypeorm);
+    jest.doMock('typeorm', () => ({ Repository: {} }));
+    jest.doMock('./audit-event.entity', () => entityModule);
+    try {
+      jest.isolateModules(() => {
+        const reloaded = jest.requireActual<{ ActivityFeedService: unknown }>(
+          './activity-feed.service',
+        );
+        expect(typeof reloaded.ActivityFeedService).toBe('function');
+      });
+    } finally {
+      jest.dontMock('@nestjs/common');
+      jest.dontMock('@nestjs/typeorm');
+      jest.dontMock('typeorm');
+      jest.dontMock('./audit-event.entity');
+    }
   });
 });

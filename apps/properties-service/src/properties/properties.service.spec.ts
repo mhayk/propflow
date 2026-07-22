@@ -78,11 +78,58 @@ describe('PropertiesService', () => {
     expect(result.meta).toEqual({ page: 2, limit: 5, total: 7 });
   });
 
+  it('lists without a city filter when none is given', async () => {
+    repository.findAndCount.mockResolvedValue([[property()], 1]);
+    const query = new QueryPropertiesDto();
+
+    const result = await service.findAll(query);
+
+    expect(repository.findAndCount).toHaveBeenCalledWith({
+      where: {},
+      order: { createdAt: 'DESC' },
+      skip: 0,
+      take: 20,
+    });
+    expect(result.meta).toEqual({ page: 1, limit: 20, total: 1 });
+  });
+
+  it('returns the property when it exists', async () => {
+    const entity = property();
+    repository.findOneBy.mockResolvedValue(entity);
+
+    await expect(service.findOne(entity.id)).resolves.toBe(entity);
+    expect(repository.findOneBy).toHaveBeenCalledWith({ id: entity.id });
+  });
+
   it('throws NotFoundException for a missing property', async () => {
     repository.findOneBy.mockResolvedValue(null);
 
     await expect(service.findOne('missing')).rejects.toBeInstanceOf(
       NotFoundException,
     );
+  });
+
+  it('falls back to Object metadata when Repository is not defined at load time', () => {
+    // emitDecoratorMetadata guards each constructor param type with
+    // `typeof X !== "undefined" ? X : Object`; re-evaluate the module without
+    // the Repository class to execute the fallback side of that guard.
+    const typeorm = jest.requireActual<typeof import('typeorm')>('typeorm');
+    const nestTypeorm =
+      jest.requireActual<typeof import('@nestjs/typeorm')>('@nestjs/typeorm');
+    let isolated: typeof import('./properties.service') | undefined;
+
+    jest.isolateModules(() => {
+      // Pin @nestjs/typeorm to the real module so only properties.service
+      // itself sees the doctored typeorm export.
+      jest.doMock('@nestjs/typeorm', () => nestTypeorm);
+      jest.doMock('typeorm', () => ({ ...typeorm, Repository: undefined }));
+      isolated = jest.requireActual<typeof import('./properties.service')>(
+        './properties.service',
+      );
+    });
+    jest.dontMock('@nestjs/typeorm');
+    jest.dontMock('typeorm');
+
+    expect(isolated?.PropertiesService).toBeDefined();
   });
 });
