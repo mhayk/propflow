@@ -84,4 +84,5 @@ Each phase is a self-contained increment with tests and documentation.
 ## Documentation
 
 - [Architecture Decision Records](docs/adr) — every significant decision and its trade-offs
+- [Sequence flows](docs/flows.md) — how actors and services interact, flow by flow (write path, outbox relay, event fan-out, AI triage, retries/DLQ, composition, activity feed)
 - [Study notes](docs/notes) — deep dives on the concepts each phase exercises
