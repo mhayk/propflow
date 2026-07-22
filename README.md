@@ -4,7 +4,7 @@
   <a href="https://github.com/mhayk/propflow/actions/workflows/ci.yml"><img src="https://github.com/mhayk/propflow/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://mhayk.github.io/propflow/coverage/"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fmhayk.github.io%2Fpropflow%2Fcoverage%2Fbadge.json" alt="Unit coverage"></a>
   <a href="https://mhayk.github.io/propflow/"><img src="https://img.shields.io/badge/docs-live-2ea44f?style=flat&logo=materialformkdocs&logoColor=white" alt="Docs"></a>
-  <a href="docs/adr"><img src="https://img.shields.io/badge/ADRs-8-blue?style=flat" alt="ADRs"></a>
+  <a href="docs/adr"><img src="https://img.shields.io/badge/ADRs-9-blue?style=flat" alt="ADRs"></a>
 </p>
 
 <p align="center">

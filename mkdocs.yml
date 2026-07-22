@@ -53,6 +53,7 @@ nav:
       - 0006 LLM triage: adr/0006-llm-triage.md
       - 0007 Outbox pattern: adr/0007-outbox-pattern.md
       - 0008 Authentication: adr/0008-authentication.md
+      - 0009 Service discovery: adr/0009-service-discovery.md
   - Study notes:
       - Overview: notes/README.md
       - Phase 1 — Work Orders: notes/phase-1-work-orders.md
