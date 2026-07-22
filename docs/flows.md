@@ -67,7 +67,7 @@ sequenceDiagram
             RL->>DB: stamp published_at, COMMIT
         else a broker fails
             RL->>DB: ROLLBACK — rows stay staged
-            Note over RL: retried next tick; duplicates possible,<br/>every consumer dedupes (at-least-once)
+            Note over RL: retried next tick — duplicates possible,<br/>every consumer dedupes (at-least-once)
         end
     end
 ```
@@ -221,4 +221,28 @@ sequenceDiagram
     FE->>DB: WHERE id < cursor ORDER BY id DESC LIMIT n+1
     FE-->>GW: data + nextCursor (null at the end)
     GW-->>Manager: page — stable even while new events append
+```
+
+## 8. Work order lifecycle (state machine)
+
+Not a sequence but the state chart the transitions in diagrams 1 and 4 are guarded by (`work-order-transitions.ts`). `assigned` is only reachable through the assign endpoint — the one transition that guarantees an assignee exists — and cancellation is possible from any non-terminal state. Each transition emits the matching domain event through the outbox.
+
+```mermaid
+stateDiagram-v2
+    [*] --> open: POST /work-orders<br/>(work-order.created)
+    open --> assigned: assign<br/>(work-order.assigned)
+    assigned --> assigned: reassign<br/>(work-order.assigned)
+    assigned --> in_progress: status change<br/>(work-order.started)
+    in_progress --> completed: status change<br/>(work-order.completed)
+    open --> cancelled: (work-order.cancelled)
+    assigned --> cancelled: (work-order.cancelled)
+    in_progress --> cancelled: (work-order.cancelled)
+    completed --> [*]
+    cancelled --> [*]
+
+    note right of open
+        AI triage runs async after creation —
+        it annotates (category/urgency),
+        never drives a transition
+    end note
 ```
