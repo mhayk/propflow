@@ -26,6 +26,16 @@ export interface PropertyDto {
   updatedAt: string;
 }
 
+export interface ActivityEventDto {
+  id: string;
+  eventType: string;
+  workOrderId: string;
+  propertyId: string;
+  correlationId: string | null;
+  occurredAt: string;
+  payload: Record<string, unknown>;
+}
+
 export interface Paginated<T> {
   data: T[];
   meta: {
@@ -33,4 +43,9 @@ export interface Paginated<T> {
     limit: number;
     total: number;
   };
+}
+
+export interface CursorPage<T> {
+  data: T[];
+  nextCursor: string | null;
 }
