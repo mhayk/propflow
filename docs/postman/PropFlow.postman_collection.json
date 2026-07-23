@@ -1,0 +1,308 @@
+{
+  "info": {
+    "_postman_id": "b1f0a7c2-9d3e-4f81-a6c4-propflow00001",
+    "name": "PropFlow API",
+    "description": "PropFlow — event-driven property maintenance platform.\n\nHOW TO USE\n1. Import this file into Postman.\n2. Run **Auth > Login (manager)** first — it saves the JWT into the collection variable `token`, and every other request uses it automatically (collection-level Bearer auth).\n3. Run **Properties > Create property** then **Work Orders > Create work order** — they save `propertyId` and `workOrderId`, so the rest of the flow chains without editing anything.\n4. Try **Work Orders > Get work order** a few seconds later to see the async AI triage fill in, and **Activity > Activity feed** to see the audit trail.\n\nBase URL defaults to a local gateway (`http://localhost:3000/api`). Change the `baseUrl` collection variable to point elsewhere.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000/api" },
+    { "key": "token", "value": "" },
+    { "key": "propertyId", "value": "" },
+    { "key": "workOrderId", "value": "" },
+    { "key": "assigneeId", "value": "22222222-2222-4222-8222-222222222222" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login (manager)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('token', body.accessToken);",
+                  "pm.test('got a token and role', () => {",
+                  "  pm.expect(body.accessToken).to.be.a('string');",
+                  "  pm.expect(body.role).to.eql('manager');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"manager@propflow.dev\",\n  \"password\": \"propflow\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Public. Roles available: manager@propflow.dev, tenant@propflow.dev, tech@propflow.dev — all password 'propflow'. Saves accessToken to {{token}}."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Properties",
+      "item": [
+        {
+          "name": "Create property",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('propertyId', pm.response.json().id);",
+                  "pm.test('created', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Riverside House\",\n  \"addressLine1\": \"12 Thames Road\",\n  \"city\": \"London\",\n  \"postcode\": \"SE1 7TP\",\n  \"managerEmail\": \"manager@propflow.dev\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/properties",
+              "host": ["{{baseUrl}}"],
+              "path": ["properties"]
+            },
+            "description": "Role: manager. Saves the new id to {{propertyId}}."
+          }
+        },
+        {
+          "name": "List properties",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/properties?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["properties"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            },
+            "description": "Role: any authenticated user."
+          }
+        },
+        {
+          "name": "Get property",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/properties/{{propertyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["properties", "{{propertyId}}"]
+            },
+            "description": "Role: any authenticated user."
+          }
+        },
+        {
+          "name": "Property summary (composed)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/properties/{{propertyId}}/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["properties", "{{propertyId}}", "summary"]
+            },
+            "description": "Role: any authenticated user. Composes the property with its work orders; degrades gracefully (workOrdersAvailable:false) if the work-orders service is down."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Work Orders",
+      "item": [
+        {
+          "name": "Create work order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('workOrderId', pm.response.json().id);",
+                  "pm.test('created (triage runs async)', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"No heating and gas smell\",\n  \"description\": \"Tenant reports a strong smell of gas in the kitchen and the boiler is completely dead in the middle of winter\",\n  \"propertyId\": \"{{propertyId}}\",\n  \"priority\": \"medium\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/work-orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["work-orders"]
+            },
+            "description": "Roles: tenant, manager. Returns immediately — AI triage is async. Saves the new id to {{workOrderId}}. Tip: this body understates the priority as 'medium'; re-fetch in a few seconds and the LLM will have raised it to emergency."
+          }
+        },
+        {
+          "name": "Get work order",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/work-orders/{{workOrderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["work-orders", "{{workOrderId}}"]
+            },
+            "description": "Role: any authenticated user. A few seconds after creation, triageCategory / triageUrgency / triageReasoning fill in."
+          }
+        },
+        {
+          "name": "List work orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/work-orders?page=1&limit=20&propertyId={{propertyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["work-orders"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "status", "value": "open", "disabled": true },
+                { "key": "priority", "value": "urgent", "disabled": true },
+                { "key": "propertyId", "value": "{{propertyId}}" }
+              ]
+            },
+            "description": "Role: any authenticated user. Optional filters: status, priority, propertyId."
+          }
+        },
+        {
+          "name": "Assign technician",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assigneeId\": \"{{assigneeId}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/work-orders/{{workOrderId}}/assign",
+              "host": ["{{baseUrl}}"],
+              "path": ["work-orders", "{{workOrderId}}", "assign"]
+            },
+            "description": "Role: manager. The only way into the 'assigned' state."
+          }
+        },
+        {
+          "name": "Update status",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"in_progress\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/work-orders/{{workOrderId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["work-orders", "{{workOrderId}}", "status"]
+            },
+            "description": "Roles: technician, manager. Allowed: in_progress | completed | cancelled. An invalid transition returns 409."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Activity",
+      "item": [
+        {
+          "name": "Activity feed (audit)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/activity?workOrderId={{workOrderId}}&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["activity"],
+              "query": [
+                { "key": "workOrderId", "value": "{{workOrderId}}" },
+                { "key": "limit", "value": "20" },
+                { "key": "cursor", "value": "", "disabled": true }
+              ]
+            },
+            "description": "Role: manager. Keyset-paginated, newest first; follow nextCursor. Each entry carries actorId (null for system-initiated events like AI triage)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Platform (public)",
+      "item": [
+        {
+          "name": "Health (liveness)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] }
+          }
+        },
+        {
+          "name": "Readiness",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/health/ready", "host": ["{{baseUrl}}"], "path": ["health", "ready"] }
+          }
+        },
+        {
+          "name": "Metrics (Prometheus)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/metrics", "host": ["{{baseUrl}}"], "path": ["metrics"] }
+          }
+        },
+        {
+          "name": "OpenAPI document",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/docs-json", "host": ["{{baseUrl}}"], "path": ["docs-json"] },
+            "description": "The raw OpenAPI document the gateway serves (rendered as Scalar at /api/docs)."
+          }
+        }
+      ]
+    }
+  ]
+}

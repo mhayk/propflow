@@ -180,6 +180,7 @@ Each phase is a self-contained increment with tests and documentation.
 - [Design patterns](docs/patterns.md) — catalog of the patterns used (architectural, messaging, application) and the ones deliberately not used
 - [Running on GCP](docs/gcp.md) — a deployment study mapping the stack onto Google Cloud (GKE, Cloud SQL, Pub/Sub, Managed Kafka, Claude on Vertex AI) and how little code moves
 - [API reference](docs/api.md) — every endpoint with its required role; interactive OpenAPI ([Scalar](https://scalar.com)) at `/api/docs` when running, [rendered statically here](https://mhayk.github.io/propflow/api-reference/)
+- [Postman collection](docs/postman/PropFlow.postman_collection.json) — import and call every endpoint; login auto-saves the token, create-requests chain the ids
 - [Event catalog](docs/events.md) — the async contract: envelope, every event with producers/consumers, broker topology, delivery guarantees; formal [AsyncAPI spec](asyncapi.yaml) validated in CI and [rendered on the docs site](https://mhayk.github.io/propflow/asyncapi/)
 - [Architecture Decision Records](docs/adr) — every significant decision and its trade-offs
 - [Sequence flows](docs/flows.md) — how actors and services interact, flow by flow (auth, write path, outbox relay, event fan-out, AI triage, retries/DLQ, composition, activity feed)
