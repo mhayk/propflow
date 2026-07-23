@@ -25,6 +25,12 @@ flowchart LR
 
 Each service owns its data (database-per-service). Queries travel synchronously through the gateway; side effects travel asynchronously as domain events — staged in a transactional outbox, fanned out by RabbitMQ, retained forever by Kafka.
 
+## See it running
+
+`npm run demo` drives the whole platform through the gateway: it opens a work order whose tenant **understates** the priority as `medium`, and the LLM re-evaluates it to `emergency` — then the state machine runs and the audit feed prints every event attributed (human vs. `system (AI)`). Auth, the state machine, the outbox, both brokers, the audit projection and AI triage, end to end:
+
+![PropFlow live demo](assets/demo.gif)
+
 ## Reading guide
 
 - **[Services map](services.md)** — each service's mission, its world in a diagram, and its explicit non-responsibilities.
