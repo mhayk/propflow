@@ -185,4 +185,5 @@ Each phase is a self-contained increment with tests and documentation.
 - [Architecture Decision Records](docs/adr) — every significant decision and its trade-offs
 - [Sequence flows](docs/flows.md) — how actors and services interact, flow by flow (auth, write path, outbox relay, event fan-out, AI triage, retries/DLQ, composition, activity feed)
 - [Study notes](docs/notes) — deep dives on the concepts each phase exercises
+- [Known limitations & planned work](docs/future-work.md) — the deliberate gaps and what would close each (technician/assignee registry, refresh tokens, tracing, …)
 - [Unit coverage report](https://mhayk.github.io/propflow/coverage/) — line-by-line, republished on every push; the badge above tracks it. Unit scope only: the gateway's HTTP surface is exercised by the e2e suites, which don't count here

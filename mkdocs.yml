@@ -58,6 +58,7 @@ nav:
       - 0008 Authentication: adr/0008-authentication.md
       - 0009 Service discovery: adr/0009-service-discovery.md
       - 0010 Direct SDK over LLM frameworks: adr/0010-direct-sdk-over-llm-frameworks.md
+  - Known limitations & planned work: future-work.md
   - Study notes:
       - Overview: notes/README.md
       - Phase 1 — Work Orders: notes/phase-1-work-orders.md

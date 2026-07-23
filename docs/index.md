@@ -40,3 +40,4 @@ Each service owns its data (database-per-service). Queries travel synchronously 
 - **[Sequence flows](flows.md)** — how actors and services interact, diagram by diagram: auth, the write path, the outbox relay, event fan-out, AI triage, retries/DLQ, composition, the activity feed, and the work-order state machine.
 - **[ADRs](adr/README.md)** — every significant decision and the trade-offs behind it.
 - **[Study notes](notes/README.md)** — the concepts each phase exercises, written as it was built.
+- **[Known limitations & planned work](future-work.md)** — the deliberate gaps and what would close each, led by the technician/assignee registry.
