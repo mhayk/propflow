@@ -108,6 +108,52 @@ npm run demo
 
 It authenticates, opens a work order whose tenant **understates** the priority as `medium`, and shows the LLM re-evaluating it to `emergency` — then runs the state machine and prints the audit feed with every event attributed (human vs. `system (AI)`). It's the fastest way to see auth, the state machine, the transactional outbox, both brokers, the audit projection and AI triage working end to end.
 
+<details>
+<summary>Sample run</summary>
+
+```text
+PropFlow — live demo  (http://localhost:3000/api)
+    OK  gateway healthy
+
+==> 1. Authenticate (role: manager)
+    OK  JWT issued (eyJhbGciOiJIUzI1NiIs...)
+    OK  request without a token -> 401 (auth is enforced)
+
+==> 2. Register a property
+    OK  propertyId c6e716a1-425e-4e8f-ac01-683e5a0418db
+
+==> 3. Open a work order — tenant reports priority: medium
+    "strong smell of gas in the kitchen and the boiler is dead in winter"
+    OK  workOrderId df0a1cd0-5255-4efb-836e-897fd02b0d15  (returns immediately — triage is async, off the write path)
+
+==> 4. AI triage (LLM -> outbox -> Kafka), waiting...
+    OK  classified in ~4s
+    category   hvac
+    urgency    emergency  (the LLM raised it from the tenant's "medium")
+    reasoning  A strong gas smell poses an active danger of fire or explosion, and combined with no heat in winter this is a life-safety emergency regardless of the tenant's stated priority.
+
+==> 5. Lifecycle transitions (guarded by the state machine)
+    OK  assign -> 200
+    OK  in_progress -> 200
+    OK  invalid in_progress->open -> 409 (rejected, as it should be)
+
+==> 6. Activity feed — audit projection of the Kafka log
+    work-order.started     by manager@propflow.dev
+    work-order.assigned    by manager@propflow.dev
+    work-order.triaged     by system (AI)
+    work-order.created     by manager@propflow.dev
+
+==> What just happened
+    1 request -> state + event committed atomically (outbox), never lost
+    outbox relay -> RabbitMQ (notifications) + Kafka (audit), at-least-once
+    AI triage ran async and re-evaluated the priority, attributed as 'system'
+    every action is auditable end to end, with who did it
+
+done.
+```
+
+</details>
+
 ## Roadmap
 
 Each phase is a self-contained increment with tests and documentation.
