@@ -13,3 +13,4 @@ Every significant technical decision in this project is recorded here using the 
 - [ADR-0007](0007-outbox-pattern.md) — Transactional outbox with a polling relay
 - [ADR-0008](0008-authentication.md) — Authentication at the edge, identity in the events
 - [ADR-0009](0009-service-discovery.md) — Platform-native service discovery over a dedicated registry
+- [ADR-0010](0010-direct-sdk-over-llm-frameworks.md) — Direct Anthropic SDK over LLM frameworks (LangChain/LangGraph/Langfuse)

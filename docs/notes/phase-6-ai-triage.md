@@ -40,6 +40,6 @@ Applying a triage publishes `work-order.triaged` with the category, urgency and 
 ## Honest limitations (worth volunteering in review)
 
 - **Lost events mean no triage** — best-effort publish + best-effort consume; the outbox pattern (Phase 7) is the fix.
-- **No eval harness**: prompt/model changes ship without a regression score. A real system keeps a labeled set of past requests and scores category/urgency accuracy per change.
+- **No eval harness**: prompt/model changes ship without a regression score. A real system keeps a labeled set of past requests and scores category/urgency accuracy per change — this is exactly where an LLM-observability tool like Langfuse would earn its place ([ADR-0010](../adr/0010-direct-sdk-over-llm-frameworks.md)).
 - **No human-in-the-loop**: triage silently informs sorting. If it started driving dispatch or spend, an emergency-level classification would warrant confirmation flows.
 - **Single-shot classification**: no retry-on-refusal, no fallback model. The API supports fallback chains; complexity wasn't justified for an advisory field.
