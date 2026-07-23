@@ -98,6 +98,16 @@ curl -s -X POST localhost:3000/api/auth/login \
 # -> { "accessToken": "...", "role": "manager" }  — send as Authorization: Bearer <token>
 ```
 
+## Live demo
+
+With the stack up (and `ANTHROPIC_API_KEY` set for the work-orders service), one command drives the whole platform through the gateway and narrates each step:
+
+```bash
+npm run demo
+```
+
+It authenticates, opens a work order whose tenant **understates** the priority as `medium`, and shows the LLM re-evaluating it to `emergency` — then runs the state machine and prints the audit feed with every event attributed (human vs. `system (AI)`). It's the fastest way to see auth, the state machine, the transactional outbox, both brokers, the audit projection and AI triage working end to end.
+
 ## Roadmap
 
 Each phase is a self-contained increment with tests and documentation.

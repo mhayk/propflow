@@ -19,6 +19,7 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./apps/api-gateway/test/jest-e2e.json && jest --config ./apps/work-orders-service/test/jest-e2e.json && jest --config ./apps/notifications-service/test/jest-e2e.json && jest --config ./apps/properties-service/test/jest-e2e.json && jest --config ./apps/audit-service/test/jest-e2e.json",
     "openapi:export": "ts-node -r tsconfig-paths/register scripts/export-openapi.ts",
+    "demo": "bash scripts/demo.sh",
     "typeorm:work-orders": "typeorm-ts-node-commonjs -d apps/work-orders-service/src/database/data-source.ts",
     "typeorm:properties": "typeorm-ts-node-commonjs -d apps/properties-service/src/database/data-source.ts",
     "typeorm:audit": "typeorm-ts-node-commonjs -d apps/audit-service/src/database/data-source.ts",
