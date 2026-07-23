@@ -1,10 +1,10 @@
 {
   "name": "propflow",
   "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "description": "Event-driven property maintenance platform — NestJS microservices, RabbitMQ + Kafka, transactional outbox, LLM triage, JWT auth.",
+  "author": "Mhayk Whandson <hi@mhayk.com>",
   "private": true,
-  "license": "UNLICENSED",
+  "license": "MIT",
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
