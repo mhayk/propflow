@@ -108,8 +108,12 @@ npm run demo
 
 It authenticates, opens a work order whose tenant **understates** the priority as `medium`, and shows the LLM re-evaluating it to `emergency` — then runs the state machine and prints the audit feed with every event attributed (human vs. `system (AI)`). It's the fastest way to see auth, the state machine, the transactional outbox, both brokers, the audit projection and AI triage working end to end.
 
+![PropFlow live demo](docs/assets/demo.gif)
+
+> Recorded with [VHS](https://github.com/charmbracelet/vhs) from a real run — regenerate with `vhs scripts/demo.tape`.
+
 <details>
-<summary>Sample run</summary>
+<summary>Sample run (text)</summary>
 
 ```text
 PropFlow — live demo  (http://localhost:3000/api)
