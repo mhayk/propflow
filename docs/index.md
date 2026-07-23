@@ -28,6 +28,7 @@ Each service owns its data (database-per-service). Queries travel synchronously 
 ## Reading guide
 
 - **[Services map](services.md)** — each service's mission, its world in a diagram, and its explicit non-responsibilities.
+- **[Design patterns](patterns.md)** — every pattern in the codebase, where it lives, and the ones deliberately left out.
 - **[Running on GCP](gcp.md)** — how the platform would map onto Google Cloud, and how little code moves.
 - **[API reference](api.md)** — every endpoint with its required role; interactive OpenAPI at `/api/docs` on a running gateway.
 - **[Sequence flows](flows.md)** — how actors and services interact, diagram by diagram: auth, the write path, the outbox relay, event fan-out, AI triage, retries/DLQ, composition, the activity feed, and the work-order state machine.

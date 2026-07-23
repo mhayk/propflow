@@ -38,6 +38,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Services map: services.md
+  - Design patterns: patterns.md
   - Running on GCP: gcp.md
   - API reference: api.md
   - OpenAPI (Scalar): https://mhayk.github.io/propflow/api-reference/
