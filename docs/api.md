@@ -2,6 +2,8 @@
 
 The public API is served by the gateway under `/api`. **Interactive OpenAPI docs (rendered with [Scalar](https://scalar.com)) live at [`/api/docs`](http://localhost:3000/api/docs)** when the gateway is running — generated from the controllers, so they can't drift — and the same document is [published statically here](https://mhayk.github.io/propflow/api-reference/) (raw JSON at `/api/docs-json` on the gateway). This page is the GitHub-readable summary. How each flow works internally: [sequence diagrams](flows.md). The asynchronous side of the contract — domain events, brokers, delivery guarantees — lives in the [event catalog](events.md).
 
+**Postman:** import [`docs/postman/PropFlow.postman_collection.json`](https://github.com/mhayk/propflow/blob/main/docs/postman/PropFlow.postman_collection.json). Run **Auth > Login** once — it saves the JWT to a collection variable and every other request uses it automatically; **Create property** / **Create work order** save their ids so the flow chains with no editing.
+
 ## Authentication
 
 Every business route requires `Authorization: Bearer <token>` ([ADR-0008](adr/0008-authentication.md)). Get a token:
