@@ -117,6 +117,7 @@ Each phase is a self-contained increment with tests and documentation.
 **Hosted docs: [mhayk.github.io/propflow](https://mhayk.github.io/propflow/)** — same content, with rendered diagrams, navigation and search.
 
 - [Services map](docs/services.md) — each service's mission, its world in a diagram, and its explicit non-responsibilities
+- [Running on GCP](docs/gcp.md) — a deployment study mapping the stack onto Google Cloud (GKE, Cloud SQL, Pub/Sub, Managed Kafka, Claude on Vertex AI) and how little code moves
 - [API reference](docs/api.md) — every endpoint with its required role; interactive OpenAPI ([Scalar](https://scalar.com)) at `/api/docs` when running, [rendered statically here](https://mhayk.github.io/propflow/api-reference/)
 - [Event catalog](docs/events.md) — the async contract: envelope, every event with producers/consumers, broker topology, delivery guarantees; formal [AsyncAPI spec](asyncapi.yaml) validated in CI and [rendered on the docs site](https://mhayk.github.io/propflow/asyncapi/)
 - [Architecture Decision Records](docs/adr) — every significant decision and its trade-offs
